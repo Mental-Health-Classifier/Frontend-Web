@@ -1,0 +1,123 @@
+/** @import must precede all other statements */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Tailwind CSS theme
+   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+   * A different format will require also updating the theme in tailwind.config.ts.
+  */
+  :root {
+    /* Mental Health App Color Palette */
+    --teal-deepest: 174 38% 5.7%;
+    --green-forest: 157 38% 25.5%;
+    --green-sage: 157 37% 39.6%;
+    --green-mint: 157 57% 79%;
+
+    /* Theme Colors */
+    --background: 0 0% 100%;
+    --foreground: 174 38% 5.7%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 174 38% 5.7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 174 38% 5.7%;
+
+    --primary: 157 38% 25.5%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 157 57% 79%;
+    --secondary-foreground: 174 38% 5.7%;
+
+    --muted: 157 20% 85%;
+    --muted-foreground: 157 20% 40%;
+
+    --accent: 157 37% 39.6%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 157 20% 90%;
+    --input: 157 20% 95%;
+    --ring: 157 38% 25.5%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 157 57% 79%;
+    --sidebar-foreground: 174 38% 5.7%;
+    --sidebar-primary: 157 38% 25.5%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 157 37% 39.6%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 157 20% 90%;
+    --sidebar-ring: 157 38% 25.5%;
+  }
+
+  .dark {
+    --background: 174 38% 15%;
+    --foreground: 157 57% 79%;
+
+    --card: 174 38% 20%;
+    --card-foreground: 157 57% 79%;
+
+    --popover: 174 38% 20%;
+    --popover-foreground: 157 57% 79%;
+
+    --primary: 157 38% 25.5%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 157 20% 70%;
+    --secondary-foreground: 174 38% 5.7%;
+
+    --muted: 174 38% 30%;
+    --muted-foreground: 157 57% 79%;
+
+    --accent: 157 37% 39.6%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 174 38% 25%;
+    --input: 174 38% 25%;
+    --ring: 157 57% 79%;
+    --sidebar-background: 174 38% 20%;
+    --sidebar-foreground: 157 57% 79%;
+    --sidebar-primary: 157 38% 25.5%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 157 37% 39.6%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 174 38% 25%;
+    --sidebar-ring: 157 57% 79%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply text-foreground;
+    background-image: linear-gradient(145deg, hsl(var(--green-mint) / 0.22), hsl(var(--secondary) / 0.15), hsl(var(--background) / 0.90));
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  pre,
+  code {
+    overflow-x: auto;
+    white-space: pre;
+  }
+}

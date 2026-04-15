@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MindCare Preview - Register</title>
+  <style>
+/* Shared style for static preview pages */
+:root {
+  --bg: #f7fdfd;
+  --card: #ffffff;
+  --text: #102a33;
+  --muted: #5b6c74;
+  --border: #d8e3e6;
+  --primary-from: #0f7c6f;
+  --primary-to: #30b084;
+  --accent: #2f8f66;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; color: var(--text); background: linear-gradient(145deg, #e7f8f6, #f3fbfb 55%, #eef9fe); }
+.container { max-width: 1260px; margin: 0 auto; padding: 18px; }
+.page { min-height: calc(100vh - 160px); }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 18px 28px; background: linear-gradient(90deg, var(--primary-from), var(--accent), var(--primary-to)); color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.18); border-bottom: 1px solid rgba(255,255,255,.2); }
+.header .brand { font-size: 1.42rem; font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.nav a { margin-right: 18px; color: rgba(255,255,255,.90); font-weight: 600; text-decoration:none; transition: color .2s ease; }
+.nav a:hover { color: #fff; }
+.btn { border: none; cursor: pointer; font-weight: 700; border-radius: .7rem; transition: all .2s ease; }
+.btn-primary { color: #fff; background: linear-gradient(90deg, var(--primary-from), var(--accent), var(--primary-to)); box-shadow: 0 10px 22px rgba(20, 82, 67, .35); }
+.btn-primary:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 15px 30px rgba(20, 82, 67, .45); }
+.btn-outline { background: rgba(255,255,255,.88); border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { background: #fff; box-shadow: 0 8px 24px rgba(16,42,51,.12); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; box-shadow: 0 8px 22px rgba(14,26,30,.08); padding: 1.2rem; margin-bottom: 16px; }
+.card:hover { transform: translateY(-1px); box-shadow: 0 18px 28px rgba(9,40,46,.17); }
+.small { color: var(--muted); }
+.grid { display: grid; gap: 16px; }
+.grid-3 { grid-template-columns: repeat(1,minmax(0,1fr)); }
+@media(min-width: 840px){ .grid-3{ grid-template-columns: repeat(3,minmax(0,1fr)); }}
+.input, .switch input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: .75rem; background: #fff; color: var(--text); }
+.input:focus { outline: 3px solid rgba(48,176,132,.2); border-color: var(--accent); }
+.text-muted { color: var(--muted); }
+.text-small { font-size: .83rem; }
+.section-title { margin-bottom: .35rem; font-weight: 700; font-size: 1.22rem; }
+.footer { padding: 22px 0; text-align: center; font-size: .92rem; color: var(--muted); }
+.sidebar { width: 280px; background: linear-gradient(180deg, rgba(156,250,235,.95), rgba(129,198,171,.95)); border-right: 1px solid var(--border); border-radius: .75rem; min-height: calc(100vh - 128px); overflow: hidden; }
+.sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
+.sidebar-header h2 { margin:0; }
+.sidebar-list { padding: 16px; }
+.sidebar-item { border: 1px solid var(--border); border-radius: .75rem; background: #fff; margin-bottom: 10px; padding: 10px 12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition: all .2s ease; }
+.sidebar-item:hover { transform: translateY(-1px); box-shadow: 0 9px 18px rgba(0,0,0,.12); }
+.chat-bubble { border-radius: 1rem; padding: 12px 14px; max-width: 72%; line-height: 1.4; }
+.chat-user { margin-left: auto; text-align: right; background: linear-gradient(90deg, var(--primary-from), var(--accent)); color:#fff; box-shadow: 0 8px 18px rgba(44,87,72,.30); }
+.chat-ai { background: #ffff; border: 1px solid var(--border); color: #0f2f38; }
+.chat-request { background: #fff; border: 1px solid var(--border); border-radius: .75rem; padding: 14px; margin-top: 12px; display:flex; gap:10px; }
+.chat-input { flex: 1; }
+.card-gradient { background: linear-gradient(135deg, #2f8f66, #0f7c6f, #30b084); color:#fff; border:none; }
+.badge { font-size: .74rem; background: linear-gradient(90deg, #94d69f, #61bd8b); color:#fff; border-radius: .65rem; padding:.2rem .45rem; }
+.bargraph { display:flex; gap: 10px; }
+.bar { flex:1; height: 120px; border-radius:.5rem; background: #cdece3; position:relative; }
+.bar > span { position:absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size:.75rem; color:#5f787e; }
+.bar-fill { width: 100%; border-radius: .5rem; position: absolute; bottom: 0; }
+.progress-upto { background: #1aa380; }
+.progress-mid { background: #48b988; }
+.progress-high { background: #89d4b5; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="brand">MindCare</div>
+    <nav class="nav">
+      <a href="index.html">Chat</a><a href="dashboard.html">Dashboard</a><a href="settings.html">Settings</a><a href="login.html">Login</a><a href="register.html">Register</a>
+    </nav>
+  </header>
+
+  <div class="container" style="display:flex; justify-content:center; align-items:center; min-height: calc(100vh - 110px);">
+    <div style="width:100%; max-width:420px;">
+      <div class="card">
+        <div style="text-align:center; margin-bottom:18px;"><h1 style="margin:0 0 .4rem 0;">MindCare</h1><p class="text-muted">Start your mental wellness journey today</p></div>
+        <div style="display:grid; gap:12px;">
+          <label>Full Name<input class="input" type="text" value="User Name"></label>
+          <label>Email Address<input class="input" type="email" value="user@email.com"></label>
+          <label>Password<input class="input" type="password" value="********"></label>
+          <label>Confirm Password<input class="input" type="password" value="********"></label>
+          <button class="btn btn-primary" style="width:100%;">Create Account</button>
+        </div>
+        <div style="margin:18px 0; text-align:center;" class="text-muted">Already have an account?</div>
+        <a href="login.html" class="btn btn-outline" style="width:100%; text-align:center;">Sign In</a>
+      </div>
+      <p class="text-muted" style="text-align:center; margin-top:12px;">Your mental health is our priority. All conversations are encrypted and confidential.</p>
+    </div>
+  </div>
+  <footer class="footer">MindCare © 2024 - Supporting your mental health journey</footer>
+</body>
+</html>
