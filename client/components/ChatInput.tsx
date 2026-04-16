@@ -1,16 +1,33 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Mic, Send, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export default function ChatInput() {
   const [message, setMessage] = useState("");
+  const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   const handleSend = () => {
     if (message.trim()) {
       // Handle send message
       setMessage("");
     }
+  };
+
+  const popupvoiceinput = () => {
+    setIsVoiceDialogOpen(true);
+  };
+
+  const handleStartRecording = () => {
+    setIsRecording(true);
+    // TODO: Implement voice recording logic
+  };
+
+  const handleStopRecording = () => {
+    setIsRecording(false);
+    // TODO: Implement stop recording and transcription logic
   };
 
   return (
@@ -32,6 +49,7 @@ export default function ChatInput() {
           {/* Input Controls inside Textarea */}
           <div className="absolute top-2 right-2 flex items-center gap-1">
             <Button
+              onClick={popupvoiceinput}
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-accent hover:bg-secondary"
@@ -56,6 +74,56 @@ export default function ChatInput() {
           Ctrl + Enter to send • Your thoughts are safe and confidential
         </p>
       </div>
+
+      {/* Voice Recording Dialog */}
+      <Dialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Record Voice Input</DialogTitle>
+            <DialogDescription>
+              Click the button below to start recording your voice. We'll transcribe it automatically.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center gap-6 py-6">
+            {/* Recording Indicator */}
+            {isRecording && (
+              <div className="flex items-center gap-2 text-red-500">
+                <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse"></div>
+                <span className="text-sm font-medium">Recording...</span>
+              </div>
+            )}
+
+            {/* Record Button */}
+            <Button
+              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              size="lg"
+              className={isRecording ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"}
+            >
+              {isRecording ? (
+                <>
+                  <Mic className="mr-2 h-4 w-4" />
+                  Stop Recording
+                </>
+              ) : (
+                <>
+                  <Mic className="mr-2 h-4 w-4" />
+                  Start Recording
+                </>
+              )}
+            </Button>
+
+            {/* Close Button */}
+            <Button
+              onClick={() => setIsVoiceDialogOpen(false)}
+              variant="outline"
+              className="w-full"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
