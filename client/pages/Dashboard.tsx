@@ -1,17 +1,17 @@
 import AppLayout from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { TrendingUp, Activity, Brain } from "lucide-react";
+import { TrendingUp, Activity, Brain, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { xaiApi } from "@/lib/api";
 
-const trendData = [
-  { date: "Mon", stress: 65, depression: 45, anxiety: 72 },
-  { date: "Tue", stress: 72, depression: 48, anxiety: 68 },
-  { date: "Wed", stress: 58, depression: 42, anxiety: 65 },
-  { date: "Thu", stress: 75, depression: 52, anxiety: 78 },
-  { date: "Fri", stress: 68, depression: 38, anxiety: 70 },
-  { date: "Sat", stress: 45, depression: 32, anxiety: 55 },
-  { date: "Sun", stress: 62, depression: 40, anxiety: 68 },
-];
+interface Prediction {
+  id: string;
+  input_text: string;
+  category: string;
+  confidence: number;
+  created_at: string;
+}
 
 interface MetricCard {
   title: string;
@@ -21,31 +21,106 @@ interface MetricCard {
   bgGradient: string;
 }
 
-const metrics: MetricCard[] = [
-  {
-    title: "Last Status",
-    value: "Depression",
-    description: "45% confidence",
-    icon: <Brain className="h-6 w-6" />,
-    bgGradient: "from-[#0369C2]/90 to-[#0369C2]",
-  },
-  {
-    title: "Total Analyses",
-    value: "24",
-    description: "In the last 7 days",
-    icon: <Activity className="h-6 w-6" />,
-    bgGradient: "from-[#8680C6]/90 to-[#8680C6]",
-  },
-  {
-    title: "Dominant Condition",
-    value: "Anxiety",
-    description: "Avg 68% across week",
-    icon: <TrendingUp className="h-6 w-6" />,
-    bgGradient: "from-[#8680C6]/80 to-[#8680C6]",
-  },
-];
-
 export default function Dashboard() {
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await xaiApi.getHistory();
+        setPredictions(res.data ?? []);
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Derive metrics from real data
+  const lastPrediction = predictions.length > 0 ? predictions[0] : null;
+  const totalAnalyses = predictions.length;
+
+  // Count categories
+  const categoryCounts: Record<string, number> = {};
+  predictions.forEach((p) => {
+    const cat = p.category || "Unknown";
+    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+  });
+  const dominantCondition = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0];
+
+  const metrics: MetricCard[] = [
+    {
+      title: "Last Status",
+      value: lastPrediction?.category ?? "—",
+      description: lastPrediction ? `${Math.round(lastPrediction.confidence * 100)}% confidence` : "No data yet",
+      icon: <Brain className="h-6 w-6" />,
+      bgGradient: "from-[#0369C2]/90 to-[#0369C2]",
+    },
+    {
+      title: "Total Analyses",
+      value: totalAnalyses,
+      description: "All time",
+      icon: <Activity className="h-6 w-6" />,
+      bgGradient: "from-[#8680C6]/90 to-[#8680C6]",
+    },
+    {
+      title: "Dominant Condition",
+      value: dominantCondition ? dominantCondition[0] : "—",
+      description: dominantCondition ? `${dominantCondition[1]} occurrences` : "No data yet",
+      icon: <TrendingUp className="h-6 w-6" />,
+      bgGradient: "from-[#8680C6]/80 to-[#8680C6]",
+    },
+  ];
+
+  // Build trend data from real predictions (group by day)
+  const dayMap: Record<string, { stress: number; depression: number; anxiety: number; count: number }> = {};
+  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  predictions.forEach((p) => {
+    const d = new Date(p.created_at);
+    const dayKey = d.toLocaleDateString("en-US", { weekday: "short" });
+    if (!dayMap[dayKey]) dayMap[dayKey] = { stress: 0, depression: 0, anxiety: 0, count: 0 };
+    dayMap[dayKey].count++;
+
+    const conf = Math.round(p.confidence * 100);
+    const cat = (p.category || "").toLowerCase();
+    if (cat.includes("stress")) dayMap[dayKey].stress += conf;
+    else if (cat.includes("depr")) dayMap[dayKey].depression += conf;
+    else if (cat.includes("anxi") || cat.includes("cemas")) dayMap[dayKey].anxiety += conf;
+  });
+
+  const trendData = dayLabels.map((day) => {
+    const d = dayMap[day];
+    if (!d || d.count === 0) return { date: day, stress: 0, depression: 0, anxiety: 0 };
+    return {
+      date: day,
+      stress: Math.round(d.stress / d.count),
+      depression: Math.round(d.depression / d.count),
+      anxiety: Math.round(d.anxiety / d.count),
+    };
+  });
+
+  // Build recent sessions list
+  const recentSessions = predictions.slice(0, 5).map((p) => ({
+    date: new Date(p.created_at).toLocaleString("id-ID", {
+      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+    }),
+    status: p.category || "Unknown",
+    confidence: Math.round(p.confidence * 100),
+  }));
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="min-h-[calc(100vh-8rem)] bg-background flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="min-h-[calc(100vh-8rem)] bg-background p-6">
@@ -142,17 +217,17 @@ export default function Dashboard() {
               Recent Sessions
             </h2>
             <div className="space-y-3">
-              {[
-                { date: "Today 2:45 PM", status: "Anxiety", confidence: 72 },
-                { date: "Today 10:20 AM", status: "Stress", confidence: 68 },
-                { date: "Yesterday 4:15 PM", status: "Depression", confidence: 58 },
-                { date: "Yesterday 1:30 PM", status: "Anxiety", confidence: 75 },
-                { date: "2 days ago", status: "Normal", confidence: 42 },
-              ].map((session, idx) => {
+              {recentSessions.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Belum ada sesi analisis. Mulai dari halaman Chat.
+                </p>
+              )}
+              {recentSessions.map((session, idx) => {
                 let statusColor = "hsl(var(--foreground))";
-                if (session.status === "Depression") statusColor = "#0369C2";
-                if (session.status === "Anxiety") statusColor = "#8680C6";
-                if (session.status === "Stress") statusColor = "#F2393D";
+                const cat = session.status.toLowerCase();
+                if (cat.includes("depr")) statusColor = "#0369C2";
+                if (cat.includes("anxi") || cat.includes("cemas")) statusColor = "#8680C6";
+                if (cat.includes("stress")) statusColor = "#F2393D";
                 
                 return (
                   <div

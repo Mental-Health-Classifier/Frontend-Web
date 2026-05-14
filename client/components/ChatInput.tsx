@@ -2,17 +2,22 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Mic, Send, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useChat } from "@/lib/chat-context";
 
 export default function ChatInput() {
   const [message, setMessage] = useState("");
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const { sendMessage, sendAudio, isSending } = useChat();
 
-  const handleSend = () => {
-    if (message.trim()) {
-      // Handle send message
+  const handleSend = async () => {
+    if (message.trim() && !isSending) {
+      const text = message.trim();
       setMessage("");
+      await sendMessage(text);
     }
   };
 
@@ -20,14 +25,39 @@ export default function ChatInput() {
     setIsVoiceDialogOpen(true);
   };
 
-  const handleStartRecording = () => {
-    setIsRecording(true);
-    // TODO: Implement voice recording logic
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], "recording.webm", { type: "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+        setIsVoiceDialogOpen(false);
+        await sendAudio(file);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch {
+      // Microphone permission denied or not available
+    }
   };
 
   const handleStopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
     setIsRecording(false);
-    // TODO: Implement stop recording and transcription logic
   };
 
   return (
@@ -39,6 +69,7 @@ export default function ChatInput() {
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Bagikan perasaan Anda di sini... Kami mendengarkan dengan empati."
             className="resize-none min-h-[100px] border border-border rounded-lg pl-4 pr-[88px] py-3 font-sans text-sm focus:ring-2 focus:ring-accent focus:border-transparent"
+            disabled={isSending}
             onKeyDown={(e) => {
               if (e.key === "Enter" && e.ctrlKey) {
                 handleSend();
@@ -54,18 +85,19 @@ export default function ChatInput() {
               size="icon"
               className="h-8 w-8 text-accent hover:bg-secondary"
               title="Record voice input (Beta)"
+              disabled={isSending}
             >
               <Mic className="h-4 w-4" />
             </Button>
 
             <Button
               onClick={handleSend}
-              disabled={!message.trim()}
+              disabled={!message.trim() || isSending}
               size="icon"
               className="h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground"
               title="Send message"
             >
-              <Send className="h-4 w-4" />
+              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
         </div>

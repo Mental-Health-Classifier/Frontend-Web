@@ -1,22 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle } from "lucide-react";
-
-interface ChatMessage {
-  id: string;
-  type: "user" | "ai";
-  content: string;
-  xaiLime?: {
-    probabilities: {
-      depression: number;
-      anxiety: number;
-      stress: number;
-    };
-    keyWords: Array<{
-      word: string;
-      classification: "depression" | "anxiety" | "stress" | "none";
-    }>;
-  };
-}
+import { AlertCircle, MessageSquareText } from "lucide-react";
+import { useChat, type ChatMessage } from "@/lib/chat-context";
+import { useEffect, useRef } from "react";
 
 const classificationMap = {
   depression: { label: "Depresi", color: "#0369C2" },
@@ -24,37 +9,36 @@ const classificationMap = {
   stress: { label: "Stress", color: "#F2393D" },
 };
 
-const mockMessages: ChatMessage[] = [
-  {
-    id: "1",
-    type: "user",
-    content: "Saya merasa sangat lelah dan sulit tidur. Saya juga cemas dan sering emosi.",
-  },
-  {
-    id: "2",
-    type: "ai",
-    content: "Terima kasih telah berbagi perasaan Anda. Berdasarkan analisis XAI LIME, sentimen Anda menunjukkan presentase tertentu untuk masing-masing kondisi. Kami merekomendasikan Anda untuk berkonsultasi lebih lanjut.",
-    xaiLime: {
-      probabilities: {
-        depression: 45,
-        anxiety: 30,
-        stress: 25,
-      },
-      keyWords: [
-        { word: "sangat lelah", classification: "depression" },
-        { word: "sulit tidur", classification: "depression" },
-        { word: "cemas", classification: "anxiety" },
-        { word: "sering emosi", classification: "stress" },
-      ],
-    },
-  },
-];
-
 export default function ChatMessages() {
+  const { messages, isSending } = useChat();
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isSending]);
+
   return (
     <ScrollArea className="flex-1 p-6">
       <div className="space-y-6 w-full max-w-5xl mx-auto">
-        {mockMessages.map((message) => (
+        {/* Empty state */}
+        {messages.length === 0 && !isSending && (
+          <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <MessageSquareText className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-heading font-semibold text-lg text-foreground mb-1">
+                Mulai Percakapan
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                Bagikan perasaan Anda di bawah ini. Kami akan menganalisis sentimen Anda menggunakan AI dan memberikan penjelasan XAI LIME.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
@@ -120,24 +104,26 @@ export default function ChatMessages() {
                         </div>
 
                         {/* Keyword Highlights */}
-                        <div className="bg-muted/50 rounded-lg p-4">
-                          <p className="text-xs text-muted-foreground mb-3 font-medium">Highlighted Keywords:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {message.xaiLime.keyWords.map((kw, idx) => {
-                              const badgeColor = kw.classification !== "none" ? classificationMap[kw.classification].color : "hsl(var(--border))";
-                              const textColor = kw.classification !== "none" ? "#ffffff" : "hsl(var(--foreground))";
-                              return (
-                                <span
-                                  key={idx}
-                                  style={{ backgroundColor: badgeColor, color: textColor }}
-                                  className="px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm"
-                                >
-                                  {kw.word}
-                                </span>
-                              )
-                            })}
+                        {message.xaiLime.keyWords.length > 0 && (
+                          <div className="bg-muted/50 rounded-lg p-4">
+                            <p className="text-xs text-muted-foreground mb-3 font-medium">Highlighted Keywords:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {message.xaiLime.keyWords.map((kw, idx) => {
+                                const badgeColor = kw.classification !== "none" ? classificationMap[kw.classification].color : "hsl(var(--border))";
+                                const textColor = kw.classification !== "none" ? "#ffffff" : "hsl(var(--foreground))";
+                                return (
+                                  <span
+                                    key={idx}
+                                    style={{ backgroundColor: badgeColor, color: textColor }}
+                                    className="px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm"
+                                  >
+                                    {kw.word}
+                                  </span>
+                                )
+                              })}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -146,6 +132,21 @@ export default function ChatMessages() {
             )}
           </div>
         ))}
+
+        {/* Typing indicator */}
+        {isSending && (
+          <div className="flex justify-start">
+            <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-md">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div ref={bottomRef} />
       </div>
     </ScrollArea>
   );
