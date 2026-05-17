@@ -46,6 +46,7 @@ interface ChatContextValue {
   history: HistoryItem[];
   isLoading: boolean;
   isSending: boolean;
+  loadingStatus: string | null;   // current step label shown in typing indicator
   sendMessage: (text: string) => Promise<void>;
   sendAudio: (file: File) => Promise<void>;
   loadHistory: () => Promise<void>;
@@ -126,6 +127,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string | null>(null);
 
   /* Load prediction history for sidebar */
   const loadHistory = useCallback(async () => {
@@ -162,9 +164,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
     setMessages((prev) => [...prev, userMsg]);
     setIsSending(true);
+    setLoadingStatus("Menganalisis teks...");
+    // switch to LIME step after ~3.5 s (inference phase done)
+    const limeTimer = setTimeout(() => setLoadingStatus("Menerapkan LIME..."), 3500);
 
     try {
       const res = await xaiApi.predict(text);
+      clearTimeout(limeTimer);
       const prediction = res.data?.prediction;
       const xaiResults = res.data?.xai_results ?? [];
 
@@ -190,6 +196,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // Refresh history after new prediction
       await loadHistory();
     } catch (err: any) {
+      clearTimeout(limeTimer);
       const errorMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         type: "ai",
@@ -198,6 +205,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsSending(false);
+      setLoadingStatus(null);
     }
   }, [loadHistory]);
 
@@ -211,6 +219,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
     setMessages((prev) => [...prev, userMsg]);
     setIsSending(true);
+    setLoadingStatus("Mentranskrip audio...");
 
     try {
       // Step 1: transcribe audio + save analysis session
@@ -241,7 +250,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       );
 
       // Step 2: run XAI predict on the transcribed text for LIME visualization
+      setLoadingStatus("Menganalisis teks...");
+      const limeTimer2 = setTimeout(() => setLoadingStatus("Menerapkan LIME..."), 3500);
       const xaiRes = await xaiApi.predict(inputText);
+      clearTimeout(limeTimer2);
       const prediction = xaiRes.data?.prediction;
       const xaiResults  = xaiRes.data?.xai_results ?? [];
       const xaiLime     = parseXaiResults(xaiResults);
@@ -270,6 +282,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsSending(false);
+      setLoadingStatus(null);
     }
   }, [loadHistory]);
 
@@ -279,7 +292,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ChatContext.Provider value={{ messages, history, isLoading, isSending, sendMessage, sendAudio, loadHistory, startNewChat }}>
+    <ChatContext.Provider value={{ messages, history, isLoading, isSending, loadingStatus, sendMessage, sendAudio, loadHistory, startNewChat }}>
       {children}
     </ChatContext.Provider>
   );

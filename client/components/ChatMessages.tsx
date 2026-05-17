@@ -1,7 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquareText, Brain, Zap, HeartCrack, Smile } from "lucide-react";
 import { useChat, type XaiLime } from "@/lib/chat-context";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const classificationMap = {
   depression: { label: "Depresi",    color: "#0369C2" },
@@ -90,9 +90,24 @@ function HighlightedText({ text, keyWords }: { text: string; keyWords: XaiLime["
 /*  Main component                                                      */
 /* ------------------------------------------------------------------ */
 
+const STEP_ESTIMATE: Record<string, string> = {
+  "Mentranskrip audio...": "~10 dtk",
+  "Menganalisis teks...":  "~3 dtk",
+  "Menerapkan LIME...":    "~30 dtk",
+};
+
 export default function ChatMessages() {
-  const { messages, isSending, sendMessage } = useChat();
+  const { messages, isSending, loadingStatus, sendMessage } = useChat();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  // live elapsed-seconds counter while sending
+  useEffect(() => {
+    if (!isSending) { setElapsed(0); return; }
+    setElapsed(0);
+    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [isSending]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -215,14 +230,34 @@ export default function ChatMessages() {
           </div>
         ))}
 
-        {/* Typing indicator */}
+        {/* Loading indicator with step + elapsed time */}
         {isSending && (
           <div className="flex justify-start">
-            <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-md">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+            <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-md min-w-[220px] space-y-2">
+              {/* dots + step label */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+                <span className="text-xs font-medium text-foreground">
+                  {loadingStatus ?? "Memproses..."}
+                </span>
+              </div>
+              {/* elapsed + estimate */}
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground pl-1">
+                <span>{elapsed}s berlalu</span>
+                {loadingStatus && STEP_ESTIMATE[loadingStatus] && (
+                  <span className="text-muted-foreground/70">
+                    estimasi {STEP_ESTIMATE[loadingStatus]}
+                  </span>
+                )}
+              </div>
+              {/* thin progress shimmer bar */}
+              <div className="h-0.5 w-full bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-primary/50 rounded-full animate-[shimmer_2s_ease-in-out_infinite]"
+                     style={{ width: "40%", animation: "shimmer 2s ease-in-out infinite" }} />
               </div>
             </div>
           </div>
