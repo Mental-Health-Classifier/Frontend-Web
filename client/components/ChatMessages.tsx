@@ -14,7 +14,7 @@ const TEMPLATE_SUGGESTIONS = [
     icon: HeartCrack,
     label: "Merasa Sedih",
     color: "#0369C2",
-    text: "Saya merasa sangat sedih dan tidak berdaya akhir-akhir ini. Rasanya semua terasa berat dan saya tidak tahu harus bagaimana.",
+    text: "Saya kehilangan minat pada hal-hal yang dulu saya sukai. Saya merasa hampa, putus asa, dan sering menangis tanpa alasan yang jelas.",
   },
   {
     icon: Zap,

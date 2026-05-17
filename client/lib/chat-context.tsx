@@ -179,10 +179,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const LABEL_ID: Record<string, string> = { depression: "depresi", anxiety: "kecemasan", stress: "stres" };
       const category   = prediction?.category ?? "unknown";
       const labelID    = LABEL_ID[category] ?? category;
-      const confidence = prediction?.confidence ? `${Math.round(prediction.confidence * 100)}%` : "";
+      const confNum    = prediction?.confidence ?? 0;
+      const confidence = `${Math.round(confNum * 100)}%`;
       const topWords   = xaiLime?.keyWords.filter(kw => kw.classification !== "none").slice(0, 3).map(kw => kw.word).join(", ");
 
-      const aiContent = `Perasaan Anda menunjukkan tanda ${labelID} dengan kepercayaan ${confidence}.${topWords ? ` Kata yang paling berpengaruh: ${topWords}.` : ""}`;
+      const aiContent = confNum < 0.5
+        ? `Tidak terdeteksi gangguan mental yang signifikan. Perasaan Anda tampak dalam batas normal.${topWords ? ` Kata yang dianalisis: ${topWords}.` : ""}`
+        : `Perasaan Anda menunjukkan tanda ${labelID} dengan kepercayaan ${confidence}.${topWords ? ` Kata yang paling berpengaruh: ${topWords}.` : ""}`;
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
@@ -261,13 +264,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const LABEL_ID2: Record<string, string> = { depression: "depresi", anxiety: "kecemasan", stress: "stres" };
       const category   = prediction?.category ?? "unknown";
       const labelID2   = LABEL_ID2[category] ?? category;
-      const confidence = prediction?.confidence ? `${Math.round(prediction.confidence * 100)}%` : "";
+      const confNum2   = prediction?.confidence ?? 0;
+      const confidence = `${Math.round(confNum2 * 100)}%`;
       const topWords2  = xaiLime?.keyWords.filter(kw => kw.classification !== "none").slice(0, 3).map(kw => kw.word).join(", ");
+
+      const audioContent = confNum2 < 0.5
+        ? `Tidak terdeteksi gangguan mental yang signifikan. Perasaan Anda tampak dalam batas normal.${topWords2 ? ` Kata yang dianalisis: ${topWords2}.` : ""}`
+        : `Perasaan Anda menunjukkan tanda ${labelID2} dengan kepercayaan ${confidence}.${topWords2 ? ` Kata yang paling berpengaruh: ${topWords2}.` : ""}`;
 
       const aiMsg: ChatMessage = {
         id: `ai-audio-${Date.now()}`,
         type: "ai",
-        content: `Perasaan Anda menunjukkan tanda ${labelID2} dengan kepercayaan ${confidence}.${topWords2 ? ` Kata yang paling berpengaruh: ${topWords2}.` : ""}`,
+        content: audioContent,
         xaiLime,
         inputText,
       };
