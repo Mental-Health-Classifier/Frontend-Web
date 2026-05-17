@@ -30,6 +30,7 @@ export interface ChatMessage {
   type: "user" | "ai";
   content: string;
   xaiLime?: XaiLime;
+  inputText?: string;   // original user text — used for inline highlighting
   timestamp?: string;
 }
 
@@ -169,22 +170,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       const xaiLime = parseXaiResults(xaiResults);
 
-      // Build AI response text
-      const category = prediction?.category ?? "Unknown";
-      const confidence = prediction?.confidence
-        ? `${Math.round(prediction.confidence * 100)}%`
-        : "";
+      const LABEL_ID: Record<string, string> = { depression: "depresi", anxiety: "kecemasan", stress: "stres" };
+      const category   = prediction?.category ?? "unknown";
+      const labelID    = LABEL_ID[category] ?? category;
+      const confidence = prediction?.confidence ? `${Math.round(prediction.confidence * 100)}%` : "";
+      const topWords   = xaiLime?.keyWords.filter(kw => kw.classification !== "none").slice(0, 3).map(kw => kw.word).join(", ");
 
-      const aiContent = `Berdasarkan analisis, teks Anda terdeteksi sebagai **${category}** ${confidence ? `dengan tingkat kepercayaan ${confidence}` : ""}. ${xaiLime
-          ? "Berikut adalah penjelasan detail dari model XAI LIME."
-          : "Silakan lihat hasil analisis di bawah ini."
-        }`;
+      const aiContent = `Perasaan Anda menunjukkan tanda ${labelID} dengan kepercayaan ${confidence}.${topWords ? ` Kata yang paling berpengaruh: ${topWords}.` : ""}`;
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         type: "ai",
         content: aiContent,
         xaiLime,
+        inputText: text,
       };
       setMessages((prev) => [...prev, aiMsg]);
 
@@ -247,20 +246,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const xaiResults  = xaiRes.data?.xai_results ?? [];
       const xaiLime     = parseXaiResults(xaiResults);
 
-      const category   = prediction?.category ?? "Unknown";
-      const confidence = prediction?.confidence
-        ? `${Math.round(prediction.confidence * 100)}%`
-        : "";
+      const LABEL_ID2: Record<string, string> = { depression: "depresi", anxiety: "kecemasan", stress: "stres" };
+      const category   = prediction?.category ?? "unknown";
+      const labelID2   = LABEL_ID2[category] ?? category;
+      const confidence = prediction?.confidence ? `${Math.round(prediction.confidence * 100)}%` : "";
+      const topWords2  = xaiLime?.keyWords.filter(kw => kw.classification !== "none").slice(0, 3).map(kw => kw.word).join(", ");
 
       const aiMsg: ChatMessage = {
         id: `ai-audio-${Date.now()}`,
         type: "ai",
-        content: `Berdasarkan analisis audio, teks Anda terdeteksi sebagai **${category}**${confidence ? ` dengan tingkat kepercayaan ${confidence}` : ""}. ${
-          xaiLime
-            ? "Berikut adalah penjelasan detail dari model XAI LIME."
-            : "Silakan lihat hasil analisis di bawah ini."
-        }`,
+        content: `Perasaan Anda menunjukkan tanda ${labelID2} dengan kepercayaan ${confidence}.${topWords2 ? ` Kata yang paling berpengaruh: ${topWords2}.` : ""}`,
         xaiLime,
+        inputText,
       };
       setMessages((prev) => [...prev, aiMsg]);
       await loadHistory();
