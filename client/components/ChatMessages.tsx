@@ -93,7 +93,7 @@ function HighlightedText({ text, keyWords }: { text: string; keyWords: XaiLime["
 const STEP_ESTIMATE: Record<string, string> = {
   "Mentranskrip audio...": "~10 dtk",
   "Menganalisis teks...":  "~3 dtk",
-  "Menerapkan LIME...":    "~30 dtk",
+  "Menerapkan LIME...":    "~5 dtk",
 };
 
 export default function ChatMessages() {
