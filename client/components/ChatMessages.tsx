@@ -185,45 +185,50 @@ export default function ChatMessages() {
                   </p>
 
                   {/* Analysis panel — only when xaiLime present */}
-                  {message.xaiLime && (
-                    <div className="border-t border-border pt-4 space-y-4">
+                  {message.xaiLime && (() => {
+                    const activeLabels = (["depression", "anxiety", "stress"] as const)
+                      .filter(l => message.xaiLime!.probabilities[l] >= 50);
+                    if (activeLabels.length === 0) return null;
+                    return (
+                      <div className="border-t border-border pt-4 space-y-4">
 
-                      {/* 3 individual probability bars */}
-                      <div className="space-y-2">
-                        {(["depression", "anxiety", "stress"] as const).map((label) => {
-                          const pct   = message.xaiLime!.probabilities[label];
-                          const { color, label: lbl } = classificationMap[label];
-                          return (
-                            <div key={label} className="flex items-center gap-3">
-                              <span className="text-xs font-medium w-20 text-right text-muted-foreground shrink-0">
-                                {lbl}
-                              </span>
-                              <div className="flex-1 bg-secondary h-2 rounded-full overflow-hidden">
-                                <div
-                                  style={{ width: `${pct}%`, backgroundColor: color }}
-                                  className="h-full rounded-full transition-all duration-700"
-                                />
+                        {/* Only bars ≥ 50% */}
+                        <div className="space-y-2">
+                          {activeLabels.map((label) => {
+                            const pct   = message.xaiLime!.probabilities[label];
+                            const { color, label: lbl } = classificationMap[label];
+                            return (
+                              <div key={label} className="flex items-center gap-3">
+                                <span className="text-xs font-medium w-20 text-right text-muted-foreground shrink-0">
+                                  {lbl}
+                                </span>
+                                <div className="flex-1 bg-secondary h-2 rounded-full overflow-hidden">
+                                  <div
+                                    style={{ width: `${pct}%`, backgroundColor: color }}
+                                    className="h-full rounded-full transition-all duration-700"
+                                  />
+                                </div>
+                                <span className="text-xs font-semibold w-9 shrink-0" style={{ color }}>
+                                  {pct}%
+                                </span>
                               </div>
-                              <span className="text-xs font-semibold w-9 shrink-0" style={{ color }}>
-                                {pct}%
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* User input with inline word highlights */}
-                      {message.inputText && message.xaiLime.keyWords.length > 0 && (
-                        <div className="bg-muted/40 rounded-lg px-4 py-3">
-                          <HighlightedText
-                            text={message.inputText}
-                            keyWords={message.xaiLime.keyWords}
-                          />
+                            );
+                          })}
                         </div>
-                      )}
 
-                    </div>
-                  )}
+                        {/* User input with inline word highlights */}
+                        {message.inputText && message.xaiLime.keyWords.length > 0 && (
+                          <div className="bg-muted/40 rounded-lg px-4 py-3">
+                            <HighlightedText
+                              text={message.inputText}
+                              keyWords={message.xaiLime.keyWords}
+                            />
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
