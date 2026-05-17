@@ -58,47 +58,55 @@ interface ChatContextValue {
 function parseXaiResults(xaiResults: any[]): XaiLime | undefined {
   if (!xaiResults || xaiResults.length === 0) return undefined;
 
-  // Find LIME result
-  const limeResult = xaiResults.find((r: any) => r.method === "lime" || r.method === "LIME");
+  const limeResult = xaiResults.find((r: any) => r.method === "LIME" || r.method === "lime");
   if (!limeResult?.explanation_data) return undefined;
 
   const data = limeResult.explanation_data;
 
-  // Parse probabilities from explanation_data
+  // Backend stores probabilities already as percentages (75.0, not 0.75)
   const probabilities = {
-    depression: 0,
-    anxiety: 0,
-    stress: 0,
+    depression: Math.round(data.probabilities?.depression ?? 0),
+    anxiety:    Math.round(data.probabilities?.anxiety    ?? 0),
+    stress:     Math.round(data.probabilities?.stress     ?? 0),
   };
 
-  // Handle different explanation_data formats
-  if (data.probabilities) {
-    probabilities.depression = Math.round((data.probabilities.depression ?? data.probabilities.Depression ?? 0) * 100);
-    probabilities.anxiety = Math.round((data.probabilities.anxiety ?? data.probabilities.Anxiety ?? 0) * 100);
-    probabilities.stress = Math.round((data.probabilities.stress ?? data.probabilities.Stress ?? 0) * 100);
-  } else if (data.class_probabilities) {
-    probabilities.depression = Math.round((data.class_probabilities.depression ?? data.class_probabilities.Depression ?? 0) * 100);
-    probabilities.anxiety = Math.round((data.class_probabilities.anxiety ?? data.class_probabilities.Anxiety ?? 0) * 100);
-    probabilities.stress = Math.round((data.class_probabilities.stress ?? data.class_probabilities.Stress ?? 0) * 100);
-  }
-
-  // Parse keywords
+  // Parse keywords from data.explanations: { label: [{word, score}] }
+  // Each label's words with positive LIME scores support that label
   const keyWords: XaiLime["keyWords"] = [];
-  if (data.feature_importance || data.features) {
-    const features = data.feature_importance ?? data.features ?? [];
-    for (const feat of features) {
-      const word = feat.feature ?? feat.word ?? feat.token ?? "";
-      const cls = (feat.class ?? feat.classification ?? "none").toLowerCase();
-      const classification = ["depression", "anxiety", "stress"].includes(cls) ? cls as any : "none";
-      if (word) keyWords.push({ word, classification });
+  const explanations = data.explanations as Record<string, Array<{ word: string; score: number }>> | undefined;
+
+  if (explanations) {
+    const LABELS = ["depression", "anxiety", "stress"] as const;
+    // Process labels in order of highest probability so dominant class keywords appear first
+    const sortedLabels = [...LABELS].sort(
+      (a, b) => (probabilities[b] ?? 0) - (probabilities[a] ?? 0)
+    );
+    const seen = new Set<string>();
+    for (const label of sortedLabels) {
+      const wordScores = explanations[label] ?? [];
+      // Sort by score descending, keep only positive (word supports that label)
+      const positive = [...wordScores]
+        .filter((ws) => ws.score > 0)
+        .sort((a, b) => b.score - a.score);
+      for (const { word } of positive) {
+        if (!seen.has(word) && keyWords.length < 15) {
+          keyWords.push({ word, classification: label });
+          seen.add(word);
+        }
+      }
     }
-  } else if (data.explanation && Array.isArray(data.explanation)) {
-    for (const [word, weight] of data.explanation) {
-      keyWords.push({ word, classification: "none" });
+    // Add negative-score words (no strong class) as "none" so text still annotated
+    for (const label of sortedLabels) {
+      const wordScores = explanations[label] ?? [];
+      for (const { word } of wordScores) {
+        if (!seen.has(word) && keyWords.length < 20) {
+          keyWords.push({ word, classification: "none" });
+          seen.add(word);
+        }
+      }
     }
   }
 
-  // If no structured data found, return probabilities at least
   if (probabilities.depression === 0 && probabilities.anxiety === 0 && probabilities.stress === 0) {
     return undefined;
   }
@@ -194,45 +202,67 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [loadHistory]);
 
-  /* Send audio for transcription + analysis */
+  /* Send audio for transcription + XAI analysis */
   const sendAudio = useCallback(async (file: File) => {
+    const userMsgId = `user-audio-${Date.now()}`;
     const userMsg: ChatMessage = {
-      id: `user-audio-${Date.now()}`,
+      id: userMsgId,
       type: "user",
-      content: "🎙️ Voice input dikirim...",
+      content: "🎙️ Mengirim voice input...",
     };
     setMessages((prev) => [...prev, userMsg]);
     setIsSending(true);
 
     try {
+      // Step 1: transcribe audio + save analysis session
       const res = await analysisApi.sendAudio(file);
       const session = res.data;
-      const inputText = session?.input_text ?? "Audio berhasil ditranskripsi";
+      const inputText: string = session?.input_text ?? "";
 
-      // Update user message with transcribed text
+      if (!inputText.trim()) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === userMsgId ? { ...m, content: "🎙️ (audio tidak terdeteksi)" } : m
+          )
+        );
+        const aiMsg: ChatMessage = {
+          id: `ai-audio-${Date.now()}`,
+          type: "ai",
+          content: "Audio tidak dapat ditranskripsi. Pastikan audio jelas dan berbahasa Indonesia.",
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+        return;
+      }
+
+      // Update user bubble with transcription result
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === userMsg.id ? { ...m, content: `🎙️ "${inputText}"` } : m
+          m.id === userMsgId ? { ...m, content: `🎙️ "${inputText}"` } : m
         )
       );
 
-      // Now run XAI predict on the transcribed text
-      if (inputText && inputText !== "Audio berhasil ditranskripsi") {
-        const aiMsg: ChatMessage = {
-          id: `ai-audio-${Date.now()}`,
-          type: "ai",
-          content: "Audio Anda telah berhasil ditranskripsi. Namun, prediksi mental health saat ini belum dapat dilakukan karena belum diintegrasikan dengan model prediksinya.",
-        };
-        setMessages((prev) => [...prev, aiMsg]);
-      } else {
-        const aiMsg: ChatMessage = {
-          id: `ai-audio-${Date.now()}`,
-          type: "ai",
-          content: "Audio Anda telah diproses. Silakan lihat hasil analisis di dashboard.",
-        };
-        setMessages((prev) => [...prev, aiMsg]);
-      }
+      // Step 2: run XAI predict on the transcribed text for LIME visualization
+      const xaiRes = await xaiApi.predict(inputText);
+      const prediction = xaiRes.data?.prediction;
+      const xaiResults  = xaiRes.data?.xai_results ?? [];
+      const xaiLime     = parseXaiResults(xaiResults);
 
+      const category   = prediction?.category ?? "Unknown";
+      const confidence = prediction?.confidence
+        ? `${Math.round(prediction.confidence * 100)}%`
+        : "";
+
+      const aiMsg: ChatMessage = {
+        id: `ai-audio-${Date.now()}`,
+        type: "ai",
+        content: `Berdasarkan analisis audio, teks Anda terdeteksi sebagai **${category}**${confidence ? ` dengan tingkat kepercayaan ${confidence}` : ""}. ${
+          xaiLime
+            ? "Berikut adalah penjelasan detail dari model XAI LIME."
+            : "Silakan lihat hasil analisis di bawah ini."
+        }`,
+        xaiLime,
+      };
+      setMessages((prev) => [...prev, aiMsg]);
       await loadHistory();
     } catch (err: any) {
       const errorMsg: ChatMessage = {

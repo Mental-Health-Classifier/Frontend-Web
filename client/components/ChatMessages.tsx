@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, MessageSquareText } from "lucide-react";
+import { AlertCircle, MessageSquareText, Brain, Zap, HeartCrack, Smile } from "lucide-react";
 import { useChat, type ChatMessage } from "@/lib/chat-context";
 import { useEffect, useRef } from "react";
 
@@ -9,8 +9,35 @@ const classificationMap = {
   stress: { label: "Stress", color: "#F2393D" },
 };
 
+const TEMPLATE_SUGGESTIONS = [
+  {
+    icon: HeartCrack,
+    label: "Merasa Sedih",
+    color: "#0369C2",
+    text: "Saya merasa sangat sedih dan tidak berdaya akhir-akhir ini. Rasanya semua terasa berat dan saya tidak tahu harus bagaimana.",
+  },
+  {
+    icon: Zap,
+    label: "Kecemasan",
+    color: "#8680C6",
+    text: "Saya sering merasa cemas dan khawatir berlebihan tentang banyak hal, terutama pekerjaan dan masa depan saya.",
+  },
+  {
+    icon: Brain,
+    label: "Stres Berat",
+    color: "#F2393D",
+    text: "Saya merasa sangat stres dan kelelahan. Pikiran terus berputar dan saya kesulitan tidur beberapa hari ini.",
+  },
+  {
+    icon: Smile,
+    label: "Ceritakan Perasaan",
+    color: "#22c55e",
+    text: "Saya ingin berbagi perasaan saya hari ini dan mendapatkan analisis tentang kondisi mental saya.",
+  },
+];
+
 export default function ChatMessages() {
-  const { messages, isSending } = useChat();
+  const { messages, isSending, sendMessage } = useChat();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -21,19 +48,56 @@ export default function ChatMessages() {
   return (
     <ScrollArea className="flex-1 p-6">
       <div className="space-y-6 w-full max-w-5xl mx-auto">
-        {/* Empty state */}
+        {/* Welcome template — shown when chat is empty */}
         {messages.length === 0 && !isSending && (
-          <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <MessageSquareText className="h-8 w-8 text-primary" />
+          <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-8 py-8">
+            {/* Hero icon + heading */}
+            <div className="space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                <MessageSquareText className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-heading font-bold text-2xl text-foreground mb-2">
+                  Halo! Bagaimana perasaan Anda hari ini?
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Bagikan perasaan Anda dan MindCare akan menganalisis kondisi mental Anda menggunakan model AI IndoBERT dengan penjelasan transparan dari XAI LIME.
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-heading font-semibold text-lg text-foreground mb-1">
-                Mulai Percakapan
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-md">
-                Bagikan perasaan Anda di bawah ini. Kami akan menganalisis sentimen Anda menggunakan AI dan memberikan penjelasan XAI LIME.
+
+            {/* Suggestion chips */}
+            <div className="w-full max-w-2xl">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                Atau coba salah satu template ini:
               </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {TEMPLATE_SUGGESTIONS.map((tpl) => {
+                  const Icon = tpl.icon;
+                  return (
+                    <button
+                      key={tpl.label}
+                      onClick={() => sendMessage(tpl.text)}
+                      className="group flex items-start gap-3 p-4 rounded-xl border border-border/60 bg-card/60 hover:bg-card hover:border-border hover:shadow-md text-left transition-all duration-200 hover:-translate-y-0.5"
+                    >
+                      <div
+                        className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+                        style={{ backgroundColor: `${tpl.color}18`, color: tpl.color }}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold mb-1" style={{ color: tpl.color }}>
+                          {tpl.label}
+                        </p>
+                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                          {tpl.text}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

@@ -97,14 +97,14 @@ export const authApi = {
 // --- Analysis ---
 export const analysisApi = {
   getSessions: () => apiGet("/analysis"),
-  getSession: (id: number) => apiGet(`/analysis/${id}`),
+  getSession: (id: string) => apiGet(`/analysis/${id}`),
   sendText: (input_text: string) => apiPost("/analysis/text", { input_text }),
   sendAudio: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
     return apiPostFormData("/analysis/audio", fd);
   },
-  deleteSession: (id: number) => apiDelete(`/analysis/${id}`),
+  deleteSession: (id: string) => apiDelete(`/analysis/${id}`),
 };
 
 // --- XAI ---
