@@ -2,37 +2,82 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Mic, Send, Loader2, MicOff, AlertCircle } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useChat } from "@/lib/chat-context";
+import { getSupportedMimeType, buildAudioFile, watchMicDevices } from "@/lib/audio-utils";
+
+const MAX_RECORDING_SECONDS = 120; // 2-minute hard cap
 
 function formatTime(s: number) {
-  const m = Math.floor(s / 60).toString().padStart(2, "0");
+  const m   = Math.floor(s / 60).toString().padStart(2, "0");
   const sec = (s % 60).toString().padStart(2, "0");
   return `${m}:${sec}`;
 }
 
 export default function ChatInput() {
-  const [message, setMessage]               = useState("");
+  const [message, setMessage]                   = useState("");
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
-  const [isRecording, setIsRecording]       = useState(false);
-  const [recordingTime, setRecordingTime]   = useState(0);
-  const [permissionError, setPermissionError] = useState<string | null>(null);
-  const [isUploading, setIsUploading]       = useState(false);
+  const [isRecording, setIsRecording]           = useState(false);
+  const [recordingTime, setRecordingTime]       = useState(0);
+  const [permissionError, setPermissionError]   = useState<string | null>(null);
+  const [isUploading, setIsUploading]           = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef        = useRef<Blob[]>([]);
   const timerRef         = useRef<ReturnType<typeof setInterval> | null>(null);
+  const maxTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamRef        = useRef<MediaStream | null>(null);
+  const mountedRef       = useRef(true);
 
   const { sendMessage, sendAudio, isSending } = useChat();
 
-  // Clean up on unmount
+  /* ── Lifecycle ──────────────────────────────────────────────────── */
+
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      mountedRef.current = false;
+      clearTimers();
+      stopStream();
     };
   }, []);
+
+  // Stop recording if the mic device changes while recording
+  useEffect(() => {
+    return watchMicDevices(() => {
+      if (mediaRecorderRef.current?.state === "recording") {
+        cancelRecording(); // discard partial audio; user must re-record on new device
+      }
+    });
+  });
+
+  /* ── Helpers ────────────────────────────────────────────────────── */
+
+  const clearTimers = () => {
+    if (timerRef.current)    { clearInterval(timerRef.current);   timerRef.current = null; }
+    if (maxTimerRef.current) { clearTimeout(maxTimerRef.current); maxTimerRef.current = null; }
+  };
+
+  const stopStream = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
+  /** Cancel recording without uploading (too short, device change, dialog close). */
+  const cancelRecording = useCallback(() => {
+    const mr = mediaRecorderRef.current;
+    if (!mr || mr.state !== "recording") return;
+    mr.ondataavailable = null;
+    mr.onstop = () => stopStream();
+    mr.stop();
+    clearTimers();
+    if (mountedRef.current) {
+      setIsRecording(false);
+      setRecordingTime(0);
+    }
+  }, []);
+
+  /* ── Send text ──────────────────────────────────────────────────── */
 
   const handleSend = async () => {
     if (message.trim() && !isSending) {
@@ -42,18 +87,18 @@ export default function ChatInput() {
     }
   };
 
-  /* ------------------------------------------------------------------ */
-  /*  Recording                                                           */
-  /* ------------------------------------------------------------------ */
+  /* ── Recording ──────────────────────────────────────────────────── */
 
   const handleStartRecording = async () => {
-    setPermissionError(null);
+    if (mountedRef.current) setPermissionError(null);
     chunksRef.current = [];
 
+    // 1. Acquire mic stream
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     } catch (err: any) {
+      if (!mountedRef.current) return;
       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
         setPermissionError("Izin mikrofon ditolak. Izinkan akses mikrofon di browser Anda lalu coba lagi.");
       } else {
@@ -61,82 +106,94 @@ export default function ChatInput() {
       }
       return;
     }
-
     streamRef.current = stream;
 
-    // Pick the best supported MIME type
-    const mimeType = (
-      ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/ogg"]
-        .find((t) => MediaRecorder.isTypeSupported(t))
-    ) ?? "";
-
-    const mediaRecorder = mimeType
-      ? new MediaRecorder(stream, { mimeType })
-      : new MediaRecorder(stream);
-
+    // 2. Create recorder (guard constructor failure so stream is always cleaned up)
+    let mediaRecorder: MediaRecorder;
+    try {
+      const mimeType = getSupportedMimeType();
+      mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+    } catch {
+      stopStream();
+      if (mountedRef.current) setPermissionError("MediaRecorder tidak didukung browser ini.");
+      return;
+    }
     mediaRecorderRef.current = mediaRecorder;
 
+    // 3. Wire up events
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
 
+    mediaRecorder.onerror = () => {
+      clearTimers();
+      stopStream();
+      if (mountedRef.current) {
+        setIsRecording(false);
+        setRecordingTime(0);
+        setPermissionError("Terjadi kesalahan perekaman. Coba lagi.");
+      }
+    };
+
     mediaRecorder.onstop = async () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      stream.getTracks().forEach((t) => t.stop());
+      clearTimers();
+      stopStream();
 
-      const mime = mediaRecorder.mimeType || "audio/webm";
-      const ext  = mime.includes("ogg") ? "ogg" : "webm";
-      const blob = new Blob(chunksRef.current, { type: mime });
-      const file = new File([blob], `recording.${ext}`, { type: mime });
+      const file = buildAudioFile(chunksRef.current, mediaRecorder.mimeType);
 
-      setIsRecording(false);
-      setRecordingTime(0);
-      setIsUploading(true);
-      setIsVoiceDialogOpen(false);
+      if (mountedRef.current) {
+        setIsRecording(false);
+        setRecordingTime(0);
+        setIsUploading(true);
+        setIsVoiceDialogOpen(false);
+      }
 
       try {
         await sendAudio(file);
       } finally {
-        setIsUploading(false);
+        if (mountedRef.current) setIsUploading(false);
       }
     };
 
-    // 100 ms timeslice = chunks arrive continuously, more reliable than single chunk
-    mediaRecorder.start(100);
-    setIsRecording(true);
-    setRecordingTime(0);
-    timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+    // 4. Start
+    mediaRecorder.start(100); // 100 ms timeslice — continuous chunks, more reliable
+
+    if (mountedRef.current) {
+      setIsRecording(true);
+      setRecordingTime(0);
+    }
+
+    timerRef.current = setInterval(() => {
+      if (mountedRef.current) setRecordingTime((t) => t + 1);
+    }, 1000);
+
+    // Hard cap: auto-stop at MAX_RECORDING_SECONDS
+    maxTimerRef.current = setTimeout(() => {
+      if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+    }, MAX_RECORDING_SECONDS * 1000);
   };
 
   const handleStopRecording = () => {
-    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== "recording") return;
+    const mr = mediaRecorderRef.current;
+    if (!mr || mr.state !== "recording") return;
 
     if (recordingTime < 1) {
-      // Too short — cancel without uploading
-      mediaRecorderRef.current.ondataavailable = null;
-      const originalOnStop = mediaRecorderRef.current.onstop;
-      mediaRecorderRef.current.onstop = () => {
-        streamRef.current?.getTracks().forEach((t) => t.stop());
-      };
-      mediaRecorderRef.current.stop();
-      if (timerRef.current) clearInterval(timerRef.current);
-      setIsRecording(false);
-      setRecordingTime(0);
+      cancelRecording(); // too short — discard silently
       return;
     }
 
-    mediaRecorderRef.current.stop();
+    mr.stop(); // triggers onstop → upload
   };
 
   const handleDialogClose = (open: boolean) => {
-    if (!open && isRecording) handleStopRecording();
-    if (!open) setPermissionError(null);
-    setIsVoiceDialogOpen(open);
+    if (!open && isRecording) cancelRecording(); // closing while recording — discard
+    if (!open && mountedRef.current) setPermissionError(null);
+    if (mountedRef.current) setIsVoiceDialogOpen(open);
   };
 
-  /* ------------------------------------------------------------------ */
-  /*  Render                                                              */
-  /* ------------------------------------------------------------------ */
+  /* ── Render ─────────────────────────────────────────────────────── */
 
   return (
     <div className="border-t border-border bg-card p-6">
@@ -192,7 +249,6 @@ export default function ChatInput() {
 
           <div className="flex flex-col items-center gap-5 py-4">
 
-            {/* Permission error */}
             {permissionError && (
               <div className="flex items-start gap-2 w-full rounded-lg bg-destructive/10 border border-destructive/30 px-3 py-2">
                 <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
@@ -200,10 +256,8 @@ export default function ChatInput() {
               </div>
             )}
 
-            {/* Recording state visual */}
             {isRecording ? (
               <div className="flex flex-col items-center gap-3">
-                {/* Animated pulse rings */}
                 <div className="relative flex items-center justify-center">
                   <div className="absolute w-20 h-20 rounded-full bg-red-500/20 animate-ping" />
                   <div className="absolute w-14 h-14 rounded-full bg-red-500/30 animate-pulse" />
@@ -211,11 +265,15 @@ export default function ChatInput() {
                     <Mic className="h-5 w-5 text-white" />
                   </div>
                 </div>
-                {/* Timer */}
                 <div className="text-2xl font-mono font-bold text-red-500 tabular-nums">
                   {formatTime(recordingTime)}
                 </div>
-                <p className="text-xs text-muted-foreground">Merekam... tekan Stop untuk selesai</p>
+                <p className="text-xs text-muted-foreground">
+                  Merekam... tekan Stop untuk selesai
+                  {recordingTime >= MAX_RECORDING_SECONDS - 10 && (
+                    <span className="text-orange-500 ml-1">(maks {MAX_RECORDING_SECONDS}d)</span>
+                  )}
+                </p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
@@ -228,7 +286,6 @@ export default function ChatInput() {
               </div>
             )}
 
-            {/* Action buttons */}
             <div className="flex flex-col gap-2 w-full">
               {isRecording ? (
                 <Button

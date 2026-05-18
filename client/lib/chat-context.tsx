@@ -8,6 +8,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { xaiApi, analysisApi } from "@/lib/api";
+import { LABEL_ID, buildAiContent } from "@/lib/audio-utils";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -174,18 +175,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const prediction = res.data?.prediction;
       const xaiResults = res.data?.xai_results ?? [];
 
-      const xaiLime = parseXaiResults(xaiResults);
+      const xaiLime  = parseXaiResults(xaiResults);
+      const topWords = xaiLime?.keyWords.filter(kw => kw.classification !== "none").slice(0, 3).map(kw => kw.word).join(", ");
 
-      const LABEL_ID: Record<string, string> = { depression: "depresi", anxiety: "kecemasan", stress: "stres" };
-      const category   = prediction?.category ?? "unknown";
-      const labelID    = LABEL_ID[category] ?? category;
-      const confNum    = prediction?.confidence ?? 0;
-      const confidence = `${Math.round(confNum * 100)}%`;
-      const topWords   = xaiLime?.keyWords.filter(kw => kw.classification !== "none").slice(0, 3).map(kw => kw.word).join(", ");
-
-      const aiContent = confNum < 0.5
-        ? `Tidak terdeteksi gangguan mental yang signifikan. Perasaan Anda tampak dalam batas normal.${topWords ? ` Kata yang dianalisis: ${topWords}.` : ""}`
-        : `Perasaan Anda menunjukkan tanda ${labelID} dengan kepercayaan ${confidence}.${topWords ? ` Kata yang paling berpengaruh: ${topWords}.` : ""}`;
+      const { content: aiContent } = buildAiContent(prediction, topWords);
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
@@ -255,22 +248,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // Step 2: run XAI predict on the transcribed text for LIME visualization
       setLoadingStatus("Menganalisis teks...");
       const limeTimer2 = setTimeout(() => setLoadingStatus("Menerapkan LIME..."), 3500);
-      const xaiRes = await xaiApi.predict(inputText);
-      clearTimeout(limeTimer2);
-      const prediction = xaiRes.data?.prediction;
+
+      let xaiRes;
+      try {
+        xaiRes = await xaiApi.predict(inputText);
+      } finally {
+        clearTimeout(limeTimer2); // always cleared — never leaks
+      }
+
+      const prediction  = xaiRes.data?.prediction;
       const xaiResults  = xaiRes.data?.xai_results ?? [];
       const xaiLime     = parseXaiResults(xaiResults);
+      const topWords    = xaiLime?.keyWords.filter(kw => kw.classification !== "none").slice(0, 3).map(kw => kw.word).join(", ");
 
-      const LABEL_ID2: Record<string, string> = { depression: "depresi", anxiety: "kecemasan", stress: "stres" };
-      const category   = prediction?.category ?? "unknown";
-      const labelID2   = LABEL_ID2[category] ?? category;
-      const confNum2   = prediction?.confidence ?? 0;
-      const confidence = `${Math.round(confNum2 * 100)}%`;
-      const topWords2  = xaiLime?.keyWords.filter(kw => kw.classification !== "none").slice(0, 3).map(kw => kw.word).join(", ");
-
-      const audioContent = confNum2 < 0.5
-        ? `Tidak terdeteksi gangguan mental yang signifikan. Perasaan Anda tampak dalam batas normal.${topWords2 ? ` Kata yang dianalisis: ${topWords2}.` : ""}`
-        : `Perasaan Anda menunjukkan tanda ${labelID2} dengan kepercayaan ${confidence}.${topWords2 ? ` Kata yang paling berpengaruh: ${topWords2}.` : ""}`;
+      const { content: audioContent } = buildAiContent(prediction, topWords);
 
       const aiMsg: ChatMessage = {
         id: `ai-audio-${Date.now()}`,
