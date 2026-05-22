@@ -1,9 +1,11 @@
 import AppLayout from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp, Activity, Brain, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { xaiApi } from "@/lib/api";
+import { getLocalSessions } from "@/lib/session-store";
+import { useNavigate } from "react-router-dom";
 
 interface Prediction {
   id: string;
@@ -18,12 +20,19 @@ interface MetricCard {
   value: string | number;
   description: string;
   icon: React.ReactNode;
-  bgGradient: string;
+  bgClass: string;
 }
+
+const classificationMap = {
+  depression: { label: "Depresi", color: "#0369C2" },
+  anxiety: { label: "Cemas", color: "#8680C6" },
+  stress: { label: "Stres", color: "#F2393D" },
+};
 
 export default function Dashboard() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
@@ -45,42 +54,44 @@ export default function Dashboard() {
   // Count categories
   const categoryCounts: Record<string, number> = {};
   predictions.forEach((p) => {
-    const cat = p.category || "Unknown";
+    const cat = p.category || "Tidak diketahui";
     categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
   });
   const dominantCondition = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0];
 
   const metrics: MetricCard[] = [
     {
-      title: "Last Status",
+      title: "Latest Status",
       value: lastPrediction?.category ?? "—",
-      description: lastPrediction ? `${Math.round(lastPrediction.confidence * 100)}% confidence` : "No data yet",
+      description: lastPrediction ? `${Math.round(lastPrediction.confidence * 100)}% Confidence Score` : "No data yet",
       icon: <Brain className="h-6 w-6" />,
-      bgGradient: "from-[#0369C2]/90 to-[#0369C2]",
+      bgClass: "bg-primary",
     },
     {
-      title: "Total Analyses",
+      title: "Total Analysis",
       value: totalAnalyses,
       description: "All time",
       icon: <Activity className="h-6 w-6" />,
-      bgGradient: "from-[#8680C6]/90 to-[#8680C6]",
+      bgClass: "bg-foreground",
     },
     {
       title: "Dominant Condition",
       value: dominantCondition ? dominantCondition[0] : "—",
-      description: dominantCondition ? `${dominantCondition[1]} occurrences` : "No data yet",
+      description: dominantCondition ? `${dominantCondition[1]} kemunculan` : "No data yet",
       icon: <TrendingUp className="h-6 w-6" />,
-      bgGradient: "from-[#8680C6]/80 to-[#8680C6]",
+      bgClass: "bg-accent",
     },
   ];
 
   // Build trend data from real predictions (group by day)
   const dayMap: Record<string, { stress: number; depression: number; anxiety: number; count: number }> = {};
-  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayLabels = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+  const dayLabelMap: Record<string, string> = { "Sun": "Min", "Mon": "Sen", "Tue": "Sel", "Wed": "Rab", "Thu": "Kam", "Fri": "Jum", "Sat": "Sab" };
 
   predictions.forEach((p) => {
     const d = new Date(p.created_at);
-    const dayKey = d.toLocaleDateString("en-US", { weekday: "short" });
+    const dayKeyEn = d.toLocaleDateString("en-US", { weekday: "short" });
+    const dayKey = dayLabelMap[dayKeyEn] || dayKeyEn;
     if (!dayMap[dayKey]) dayMap[dayKey] = { stress: 0, depression: 0, anxiety: 0, count: 0 };
     dayMap[dayKey].count++;
 
@@ -102,13 +113,13 @@ export default function Dashboard() {
     };
   });
 
-  // Build recent sessions list
-  const recentSessions = predictions.slice(0, 5).map((p) => ({
-    date: new Date(p.created_at).toLocaleString("id-ID", {
-      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-    }),
-    status: p.category || "Unknown",
-    confidence: Math.round(p.confidence * 100),
+  // Recent Sessions from Local Storage to ensure XAI compatibility
+  const localSessions = getLocalSessions();
+  const recentSessions = localSessions.slice(0, 5).map((s) => ({
+    id: s.id,
+    date: s.timestamp,
+    status: s.category || "Tidak diketahui",
+    confidence: s.confidence || 0,
   }));
 
   if (loading) {
@@ -128,10 +139,10 @@ export default function Dashboard() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="font-heading font-bold text-3xl text-foreground mb-2">
-              Your Mental Health Dashboard
+              Dashboard Kesehatan Mental Anda
             </h1>
             <p className="text-muted-foreground">
-              Track your emotional patterns and understand your mental health trends
+              Pantau pola emosional dan pahami tren kesehatan mental Anda
             </p>
           </div>
 
@@ -140,12 +151,13 @@ export default function Dashboard() {
             {metrics.map((metric) => (
               <Card
                 key={metric.title}
-                className="border border-border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                className="border border-border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
                 <div
-                  className={`bg-gradient-to-br ${metric.bgGradient} p-6 text-white bg-clip-padding`}
+                  className={`${metric.bgClass} p-6 text-white`}
                 >
-                  <div className="flex items-start justify-between mb-4">                    <div>
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
                       <p className="text-sm font-medium opacity-90">{metric.title}</p>
                       <h2 className="font-heading font-bold text-2xl mt-1">
                         {metric.value}
@@ -163,7 +175,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div className="bg-card border border-border rounded-lg p-6">
               <h2 className="font-heading font-bold text-xl text-foreground mb-6">
-                Condition Trend (Last 7 Days)
+                Condition Trends (Last 7 Days)
               </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={trendData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
@@ -182,29 +194,29 @@ export default function Dashboard() {
                   <Line
                     type="monotone"
                     dataKey="stress"
-                    stroke="#F2393D"
+                    stroke={classificationMap.stress.color}
                     strokeWidth={2}
-                    dot={{ fill: "#F2393D", r: 4 }}
+                    dot={{ fill: classificationMap.stress.color, r: 4 }}
                     activeDot={{ r: 6 }}
-                    name="Stress"
+                    name="Stres"
                   />
                   <Line
                     type="monotone"
                     dataKey="depression"
-                    stroke="#0369C2"
+                    stroke={classificationMap.depression.color}
                     strokeWidth={2}
-                    dot={{ fill: "#0369C2", r: 4 }}
+                    dot={{ fill: classificationMap.depression.color, r: 4 }}
                     activeDot={{ r: 6 }}
-                    name="Depression"
+                    name="Depresi"
                   />
                   <Line
                     type="monotone"
                     dataKey="anxiety"
-                    stroke="#8680C6"
+                    stroke={classificationMap.anxiety.color}
                     strokeWidth={2}
-                    dot={{ fill: "#8680C6", r: 4 }}
+                    dot={{ fill: classificationMap.anxiety.color, r: 4 }}
                     activeDot={{ r: 6 }}
-                    name="Anxiety"
+                    name="Cemas"
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -219,40 +231,38 @@ export default function Dashboard() {
             <div className="space-y-3">
               {recentSessions.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Belum ada sesi analisis. Mulai dari halaman Chat.
+                  Belum ada sesi analisis. Mulai dari halaman Obrolan.
                 </p>
               )}
               {recentSessions.map((session, idx) => {
-                let statusColor = "hsl(var(--foreground))";
-                const cat = session.status.toLowerCase();
-                if (cat.includes("depr")) statusColor = "#0369C2";
-                if (cat.includes("anxi") || cat.includes("cemas")) statusColor = "#8680C6";
-                if (cat.includes("stress")) statusColor = "#F2393D";
-                
+                const catLower = session.status.toLowerCase();
+                let indicatorColor = "hsl(var(--primary))";
+                if (catLower.includes("depr")) indicatorColor = classificationMap.depression.color;
+                else if (catLower.includes("anxi") || catLower.includes("cemas")) indicatorColor = classificationMap.anxiety.color;
+                else if (catLower.includes("stress")) indicatorColor = classificationMap.stress.color;
+
                 return (
-                  <div
+                  <button
                     key={idx}
-                    className="flex items-center justify-between p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors border border-border"
+                    onClick={() => navigate(`/chat?session_id=${session.id}`)}
+                    className="w-full flex items-center justify-between p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors border border-border text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div 
-                        className="w-2 h-2 rounded-full" 
-                        style={{ backgroundColor: statusColor }}
-                      />
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: indicatorColor }} />
                       <div>
-                        <p className="font-medium text-sm text-foreground" style={{ color: statusColor }}>
+                        <p className="font-medium text-sm text-foreground">
                           {session.status}
                         </p>
                         <p className="text-xs text-muted-foreground">{session.date}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-mono font-bold text-sm" style={{ color: statusColor }}>
+                      <p className="font-mono font-bold text-sm text-foreground">
                         {session.confidence}%
                       </p>
                     </div>
-                  </div>
-                );
+                  </button>
+                )
               })}
             </div>
           </div>

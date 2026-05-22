@@ -17,7 +17,7 @@ export default function Settings() {
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [saveHistory, setSaveHistory] = useState(true);
-  const [autoVoice, setAutoVoice] = useState(false);
+  const [autoVoice, setAutoVoice] = useState(() => localStorage.getItem("autoVoice") === "true");
   const [notifications, setNotifications] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -33,6 +33,7 @@ export default function Settings() {
     try {
       await authApi.updateMe({ name, email });
       await refreshUser();
+      localStorage.setItem("autoVoice", autoVoice.toString());
       toast({ title: "Berhasil", description: "Profil berhasil diperbarui" });
     } catch (err: any) {
       toast({ title: "Gagal", description: err.message || "Terjadi kesalahan", variant: "destructive" });
@@ -43,22 +44,22 @@ export default function Settings() {
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      toast({ title: "Error", description: "Password baru dan konfirmasi tidak cocok", variant: "destructive" });
+      toast({ title: "Error", description: "Kata sandi baru dan konfirmasi tidak cocok", variant: "destructive" });
       return;
     }
     if (!currentPassword || !newPassword) {
-      toast({ title: "Error", description: "Semua field password harus diisi", variant: "destructive" });
+      toast({ title: "Error", description: "Semua field kata sandi harus diisi", variant: "destructive" });
       return;
     }
     setIsChangingPassword(true);
     try {
       await authApi.changePassword(currentPassword, newPassword);
-      toast({ title: "Berhasil", description: "Password berhasil diubah" });
+      toast({ title: "Berhasil", description: "Kata sandi berhasil diubah" });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
-      toast({ title: "Gagal", description: err.message || "Password lama salah", variant: "destructive" });
+      toast({ title: "Gagal", description: err.message || "Kata sandi lama salah", variant: "destructive" });
     } finally {
       setIsChangingPassword(false);
     }
@@ -71,10 +72,10 @@ export default function Settings() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="font-heading font-bold text-3xl text-foreground mb-2">
-              Settings
+              Pengaturan
             </h1>
             <p className="text-muted-foreground">
-              Manage your account and preferences
+              Kelola akun dan preferensi Anda
             </p>
           </div>
 
@@ -82,12 +83,12 @@ export default function Settings() {
           <Card className="border border-border">
             <div className="p-6">
               <h2 className="font-heading font-bold text-lg text-foreground mb-6">
-                Profile Management
+                Kelola Profil
               </h2>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium text-foreground">
-                    Full Name
+                    Nama Lengkap
                   </Label>
                   <Input
                     id="name"
@@ -99,7 +100,7 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium text-foreground">
-                    Email Address
+                    Alamat Email
                   </Label>
                   <Input
                     id="email"
@@ -118,12 +119,12 @@ export default function Settings() {
           <Card className="border border-border">
             <div className="p-6">
               <h2 className="font-heading font-bold text-lg text-foreground mb-6">
-                Update Password
+                Ubah Kata Sandi
               </h2>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="current" className="text-sm font-medium text-foreground">
-                    Current Password
+                    Kata Sandi Lama
                   </Label>
                   <Input
                     id="current"
@@ -137,7 +138,7 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="new" className="text-sm font-medium text-foreground">
-                    New Password
+                    Kata Sandi Baru
                   </Label>
                   <div className="relative">
                     <Input
@@ -159,7 +160,7 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm" className="text-sm font-medium text-foreground">
-                    Confirm Password
+                    Konfirmasi Kata Sandi
                   </Label>
                   <div className="relative">
                     <Input
@@ -184,7 +185,7 @@ export default function Settings() {
                   onClick={handleChangePassword}
                   disabled={isChangingPassword}
                 >
-                  {isChangingPassword ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</> : "Update Password"}
+                  {isChangingPassword ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengubah...</> : "Ubah Kata Sandi"}
                 </Button>
               </div>
             </div>
@@ -194,16 +195,16 @@ export default function Settings() {
           <Card className="border border-border">
             <div className="p-6">
               <h2 className="font-heading font-bold text-lg text-foreground mb-6">
-                Preferences
+                Preferensi
               </h2>
               <div className="space-y-5">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-background">
                   <div className="space-y-1">
                     <Label className="text-sm font-medium text-foreground">
-                      Save Analysis History
+                      Simpan Riwayat Analisis
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Keep a record of your mental health assessments
+                      Menyimpan catatan penilaian kesehatan mental Anda
                     </p>
                   </div>
                   <Switch
@@ -215,10 +216,10 @@ export default function Settings() {
                 <div className="flex items-center justify-between p-4 rounded-lg bg-background">
                   <div className="space-y-1">
                     <Label className="text-sm font-medium text-foreground">
-                      Enable Auto Voice Input
+                      Aktifkan Input Suara Otomatis
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Automatically start recording when chat is focused
+                      Otomatis mulai merekam saat obrolan difokuskan
                     </p>
                   </div>
                   <Switch
@@ -230,10 +231,10 @@ export default function Settings() {
                 <div className="flex items-center justify-between p-4 rounded-lg bg-background">
                   <div className="space-y-1">
                     <Label className="text-sm font-medium text-foreground">
-                      Notifications
+                      Notifikasi
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Receive reminders for regular check-ins
+                      Menerima pengingat untuk check-in rutin
                     </p>
                   </div>
                   <Switch
@@ -248,7 +249,7 @@ export default function Settings() {
           {/* Save Button */}
           <div className="flex gap-3 justify-end">
             <Button variant="outline" className="border border-border">
-              Cancel
+              Batal
             </Button>
             <Button
               onClick={handleSave}
@@ -256,7 +257,7 @@ export default function Settings() {
               className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Save Changes
+              Simpan Perubahan
             </Button>
           </div>
         </div>

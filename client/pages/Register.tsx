@@ -23,13 +23,13 @@ export default function Register() {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !password.trim()) return;
     if (password !== confirmPassword) {
-      toast({ title: "Error", description: "Password dan konfirmasi password tidak cocok", variant: "destructive" });
+      toast({ title: "Error", description: "Kata sandi dan konfirmasi tidak cocok", variant: "destructive" });
       return;
     }
     setIsLoading(true);
     try {
       await authApi.register(name, email, password);
-      toast({ title: "Registrasi berhasil", description: "Silakan login dengan akun baru Anda" });
+      toast({ title: "Registrasi berhasil", description: "Silakan masuk dengan akun baru Anda" });
       navigate("/login");
     } catch (err: any) {
       toast({ title: "Registrasi gagal", description: err.message || "Terjadi kesalahan", variant: "destructive" });
@@ -49,14 +49,14 @@ export default function Register() {
           <div className="p-8">
             {/* Logo/Title */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent mb-4 shadow-lg text-white">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4 shadow-lg text-white">
                 <span className="font-heading font-bold text-2xl">M</span>
               </div>
               <h1 className="font-heading font-bold text-2xl text-foreground mb-2">
                 MindCare
               </h1>
               <p className="text-sm text-muted-foreground">
-                Start your mental wellness journey today
+                Mulai perjalanan kesehatan mental Anda hari ini
               </p>
             </div>
 
@@ -64,12 +64,12 @@ export default function Register() {
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium text-foreground">
-                  Full Name
+                  Nama Lengkap
                 </Label>
                 <Input
                   id="name"
                   type="text"
-                  placeholder="Your name"
+                  placeholder="Nama Anda"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="border-border/50 bg-background/50 backdrop-blur-sm rounded-xl px-4 py-6"
@@ -79,12 +79,12 @@ export default function Register() {
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-foreground">
-                  Email Address
+                  Alamat Email
                 </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder="email@contoh.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="border-border/50 bg-background/50 backdrop-blur-sm rounded-xl px-4 py-6"
@@ -94,7 +94,7 @@ export default function Register() {
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium text-foreground">
-                  Password
+                  Kata Sandi
                 </Label>
                 <div className="relative">
                   <Input
@@ -118,7 +118,7 @@ export default function Register() {
 
               <div className="space-y-2">
                 <Label htmlFor="confirm" className="text-sm font-medium text-foreground">
-                  Confirm Password
+                  Konfirmasi Kata Sandi
                 </Label>
                 <div className="relative">
                   <Input
@@ -143,9 +143,9 @@ export default function Register() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-xl py-6 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold transition-all shadow-md hover:shadow-lg mt-6"
+                className="w-full rounded-xl py-6 bg-primary hover:bg-primary/90 text-white font-semibold transition-all shadow-md hover:shadow-lg mt-6"
               >
-                {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...</> : "Create Account"}
+                {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Membuat akun...</> : "Buat Akun"}
               </Button>
             </form>
 
@@ -156,7 +156,7 @@ export default function Register() {
               </div>
               <div className="relative flex justify-center text-xs">
                 <span className="px-4 bg-transparent text-muted-foreground bg-white dark:bg-slate-900 rounded-full">
-                  Already have an account?
+                  Sudah punya akun?
                 </span>
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function Register() {
             {/* Sign In Link */}
             <Link to="/login">
               <Button variant="outline" className="w-full rounded-xl py-6 border border-border/50 bg-background/50 hover:bg-background/80 shadow-sm transition-all drop-shadow-sm text-foreground">
-                Sign In
+                Masuk
               </Button>
             </Link>
           </div>
@@ -172,7 +172,7 @@ export default function Register() {
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-8 px-4">
-          Your mental health is our priority. All conversations are encrypted and confidential.
+          Kesehatan mental Anda adalah prioritas kami. Semua percakapan dienkripsi dan rahasia.
         </p>
       </div>
     </div>

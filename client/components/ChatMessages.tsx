@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 const classificationMap = {
   depression: { label: "Depresi", color: "#0369C2" },
   anxiety: { label: "Cemas", color: "#8680C6" },
-  stress: { label: "Stress", color: "#F2393D" },
+  stress: { label: "Stres", color: "#F2393D" },
 };
 
 export default function ChatMessages() {
@@ -45,13 +45,13 @@ export default function ChatMessages() {
           >
             {message.type === "user" ? (
               // User Message
-              <div className="bg-gradient-to-r from-primary to-accent text-white rounded-xl px-4 py-3 max-w-xs lg:max-w-md shadow-lg transform transition-all duration-200 hover:-translate-y-0.5">
+              <div className="bg-primary text-white rounded-xl px-4 py-3 max-w-xs lg:max-w-md shadow-md transition-all duration-200 hover:-translate-y-0.5">
                 <p className="text-sm leading-relaxed">{message.content}</p>
               </div>
             ) : (
               // AI Message
               <div className="w-full space-y-4">
-                <div className="bg-card border border-border rounded-xl p-4 max-w-3xl shadow-md hover:shadow-xl transition-shadow">
+                <div className="bg-card border border-border rounded-xl p-4 max-w-3xl shadow-sm hover:shadow-md transition-shadow">
                   <p className="text-sm leading-relaxed text-foreground mb-4">
                     {message.content}
                   </p>
@@ -63,13 +63,13 @@ export default function ChatMessages() {
                         <div className="flex items-center gap-2 mb-4">
                           <AlertCircle className="h-4 w-4 text-accent" />
                           <h4 className="font-heading font-semibold text-sm text-foreground">
-                            XAI LIME Analysis
+                            Analisis XAI LIME
                           </h4>
                         </div>
                         
                         {/* Probability Bars */}
                         <div className="space-y-3 mb-6">
-                          <p className="text-xs text-muted-foreground font-medium">Probabilities:</p>
+                          <p className="text-xs text-muted-foreground font-medium">Confidence Score:</p>
                           <div className="flex w-full h-4 rounded-full overflow-hidden bg-secondary">
                             <div 
                               style={{ width: `${message.xaiLime.probabilities.depression}%`, backgroundColor: classificationMap.depression.color }} 
@@ -84,7 +84,7 @@ export default function ChatMessages() {
                             <div 
                               style={{ width: `${message.xaiLime.probabilities.stress}%`, backgroundColor: classificationMap.stress.color }} 
                               className="h-full" 
-                              title={`Stress: ${message.xaiLime.probabilities.stress}%`}
+                              title={`Stres: ${message.xaiLime.probabilities.stress}%`}
                             />
                           </div>
                           <div className="flex justify-between text-xs font-medium">
@@ -98,7 +98,7 @@ export default function ChatMessages() {
                             </div>
                             <div className="flex items-center gap-1">
                               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: classificationMap.stress.color }}></span>
-                              Stress {message.xaiLime.probabilities.stress}%
+                              Stres {message.xaiLime.probabilities.stress}%
                             </div>
                           </div>
                         </div>
@@ -106,7 +106,7 @@ export default function ChatMessages() {
                         {/* Keyword Highlights */}
                         {message.xaiLime.keyWords.length > 0 && (
                           <div className="bg-muted/50 rounded-lg p-4">
-                            <p className="text-xs text-muted-foreground mb-3 font-medium">Highlighted Keywords:</p>
+                            <p className="text-xs text-muted-foreground mb-3 font-medium">Kata Kunci Penting:</p>
                             <div className="flex flex-wrap gap-2">
                               {message.xaiLime.keyWords.map((kw, idx) => {
                                 const badgeColor = kw.classification !== "none" ? classificationMap[kw.classification].color : "hsl(var(--border))";
@@ -136,7 +136,7 @@ export default function ChatMessages() {
         {/* Typing indicator */}
         {isSending && (
           <div className="flex justify-start">
-            <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-md">
+            <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-sm">
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }}></div>
                 <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }}></div>

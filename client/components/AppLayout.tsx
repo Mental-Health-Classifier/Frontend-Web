@@ -17,14 +17,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <div className="app-layout flex flex-col min-h-screen bg-gradient-to-br from-background via-green-mint to-blue-50 dark:from-[#0f172a] dark:via-[#1f2a39] dark:to-[#111827]">
+    <div className="app-layout flex flex-col min-h-screen bg-background">
       {/* Header/Navbar */}
-      <header className="app-layout-navbar bg-gradient-to-r from-green-forest via-accent to-primary text-primary-foreground border-b border-border shadow-xl">
+      <header className="app-layout-navbar bg-primary text-primary-foreground border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link
               to="/"
-              className="font-heading font-bold text-xl text-white drop-shadow-lg hover:scale-105 transition-transform"
+              className="font-heading font-bold text-xl text-white hover:opacity-90 transition-opacity"
             >
               MindCare
             </Link>
@@ -33,13 +33,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 to="/chat"
                 className="font-medium text-sm text-white/90 hover:text-white transition-colors"
               >
-                Chat
+                Obrolan
               </Link>
               <Link
                 to="/dashboard"
                 className="font-medium text-sm text-white/90 hover:text-white transition-colors"
               >
-                Dashboard
+                Dasbor
               </Link>
             </nav>
           </div>
@@ -62,7 +62,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4" />
-              <span>Logout</span>
+              <span>Keluar</span>
             </Button>
           </div>
         </div>
@@ -74,9 +74,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-gradient-to-r from-green-mint/40 via-accent/30 to-primary/30 text-primary-foreground text-sm shadow-inner">
+      <footer className="border-t border-border bg-muted text-muted-foreground text-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 text-center">
-          <p className="opacity-90">MindCare © 2026 - Supporting your mental health journey</p>
+          <p>MindCare © 2026 - Mendukung perjalanan kesehatan mental Anda</p>
         </div>
       </footer>
     </div>

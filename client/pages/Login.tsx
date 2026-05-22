@@ -26,7 +26,7 @@ export default function Login() {
       toast({ title: "Login berhasil", description: "Selamat datang kembali!" });
       navigate("/chat");
     } catch (err: any) {
-      toast({ title: "Login gagal", description: err.message || "Email atau password salah", variant: "destructive" });
+      toast({ title: "Login gagal", description: err.message || "Email atau kata sandi salah", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -43,14 +43,14 @@ export default function Login() {
           <div className="p-8">
             {/* Logo/Title */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent mb-4 shadow-lg text-white">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4 shadow-lg text-white">
                 <span className="font-heading font-bold text-2xl">M</span>
               </div>
               <h1 className="font-heading font-bold text-2xl text-foreground mb-2">
                 MindCare
               </h1>
               <p className="text-sm text-muted-foreground">
-                Welcome back. Let's continue your mental wellness journey.
+                Selamat datang kembali. Mari lanjutkan perjalanan kesehatan mental Anda.
               </p>
             </div>
 
@@ -58,12 +58,12 @@ export default function Login() {
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-foreground">
-                  Email Address
+                  Alamat Email
                 </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder="email@contoh.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="border-border/50 bg-background/50 backdrop-blur-sm rounded-xl px-4 py-6"
@@ -74,9 +74,9 @@ export default function Login() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-sm font-medium text-foreground">
-                    Password
+                    Kata Sandi
                   </Label>
-                  <a href="#" className="text-xs text-primary hover:underline font-medium">Forgot password?</a>
+                  <a href="#" className="text-xs text-primary hover:underline font-medium">Lupa kata sandi?</a>
                 </div>
                 <div className="relative">
                   <Input
@@ -101,9 +101,9 @@ export default function Login() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-xl py-6 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold transition-all shadow-md hover:shadow-lg mt-6"
+                className="w-full rounded-xl py-6 bg-primary hover:bg-primary/90 text-white font-semibold transition-all shadow-md hover:shadow-lg mt-6"
               >
-                {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...</> : "Sign In"}
+                {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sedang masuk...</> : "Masuk"}
               </Button>
             </form>
 
@@ -114,7 +114,7 @@ export default function Login() {
               </div>
               <div className="relative flex justify-center text-xs">
                 <span className="px-4 bg-transparent text-muted-foreground bg-white dark:bg-slate-900 rounded-full">
-                  Don't have an account?
+                  Belum punya akun?
                 </span>
               </div>
             </div>
@@ -122,7 +122,7 @@ export default function Login() {
             {/* Sign Up Link */}
             <Link to="/register">
               <Button variant="outline" className="w-full rounded-xl py-6 border border-border/50 bg-background/50 hover:bg-background/80 shadow-sm transition-all drop-shadow-sm text-foreground">
-                Create Account
+                Buat Akun
               </Button>
             </Link>
           </div>
@@ -130,7 +130,7 @@ export default function Login() {
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-8 px-4">
-          Your mental health is our priority. All conversations are encrypted and confidential.
+          Kesehatan mental Anda adalah prioritas kami. Semua percakapan dienkripsi dan rahasia.
         </p>
       </div>
     </div>

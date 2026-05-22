@@ -21,6 +21,17 @@ export default function ChatInput() {
     }
   };
 
+  useEffect(() => {
+    const handleStartVoice = () => {
+      setIsVoiceDialogOpen(true);
+      setTimeout(() => {
+        handleStartRecording();
+      }, 100);
+    };
+    window.addEventListener("mindcare-start-voice", handleStartVoice);
+    return () => window.removeEventListener("mindcare-start-voice", handleStartVoice);
+  }, []);
+
   const popupvoiceinput = () => {
     setIsVoiceDialogOpen(true);
   };
@@ -84,7 +95,7 @@ export default function ChatInput() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-accent hover:bg-secondary"
-              title="Record voice input (Beta)"
+              title="Rekam suara (Beta)"
               disabled={isSending}
             >
               <Mic className="h-4 w-4" />
@@ -95,7 +106,7 @@ export default function ChatInput() {
               disabled={!message.trim() || isSending}
               size="icon"
               className="h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground"
-              title="Send message"
+              title="Kirim pesan"
             >
               {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
@@ -103,7 +114,7 @@ export default function ChatInput() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Ctrl + Enter to send • Your thoughts are safe and confidential
+          Ctrl + Enter untuk kirim • Pikiran Anda aman dan rahasia
         </p>
       </div>
 
@@ -111,9 +122,9 @@ export default function ChatInput() {
       <Dialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Record Voice Input</DialogTitle>
+            <DialogTitle>Rekam Suara</DialogTitle>
             <DialogDescription>
-              Click the button below to start recording your voice. We'll transcribe it automatically.
+              Klik tombol di bawah untuk mulai merekam suara Anda. Kami akan mentranskrip secara otomatis.
             </DialogDescription>
           </DialogHeader>
           
@@ -122,7 +133,7 @@ export default function ChatInput() {
             {isRecording && (
               <div className="flex items-center gap-2 text-red-500">
                 <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse"></div>
-                <span className="text-sm font-medium">Recording...</span>
+                <span className="text-sm font-medium">Merekam...</span>
               </div>
             )}
 
@@ -135,12 +146,12 @@ export default function ChatInput() {
               {isRecording ? (
                 <>
                   <Mic className="mr-2 h-4 w-4" />
-                  Stop Recording
+                  Hentikan Rekaman
                 </>
               ) : (
                 <>
                   <Mic className="mr-2 h-4 w-4" />
-                  Start Recording
+                  Mulai Rekam
                 </>
               )}
             </Button>
@@ -151,7 +162,7 @@ export default function ChatInput() {
               variant="outline"
               className="w-full"
             >
-              Close
+              Tutup
             </Button>
           </div>
         </DialogContent>

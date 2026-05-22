@@ -7,7 +7,7 @@
  * envelope when using the `apiRequest` wrapper).
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8001/api/v1";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "https://sanitizer-antennae-goldmine.ngrok-free.dev/api/v1";
 
 /* ------------------------------------------------------------------ */
 /*  Low-level helpers                                                  */
@@ -19,7 +19,10 @@ function getToken(): string | null {
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    "ngrok-skip-browser-warning": "true",
+  };
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
