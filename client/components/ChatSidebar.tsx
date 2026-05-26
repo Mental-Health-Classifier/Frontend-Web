@@ -4,24 +4,25 @@ import { Plus, Clock } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
 
 export default function ChatSidebar() {
-  const { history, isLoading, startNewChat } = useChat();
+  const { history, isLoading, startNewChat, loadHistoryItem, activeHistoryId } = useChat();
 
   return (
-    <div className="w-64 bg-gradient-to-b from-green-mint/90 to-secondary border-r border-border flex flex-col h-full shadow-xl">
+    <div className="w-64 bg-secondary border-r border-border flex flex-col h-full">
       {/* Header */}
       <div className="p-6">
-        <div className="bg-white/70 dark:bg-slate-800/70 p-3 rounded-lg flex items-center justify-center mb-4">
-          <h1 className="font-heading font-bold text-xl text-foreground drop-shadow-sm border-none">
-            Mental Health
-          </h1>
-        </div>
+
         <Button
           className="w-full bg-white/70 dark:bg-slate-800/70 text-foreground hover:bg-white/90 dark:hover:bg-slate-800/90 font-medium gap-2 border-none shadow-sm"
           variant="outline"
-          onClick={startNewChat}
+          onClick={() => {
+            startNewChat();
+            if (localStorage.getItem("autoVoice") === "true") {
+              window.dispatchEvent(new Event("mindcare-start-voice"));
+            }
+          }}
         >
           <Plus className="h-5 w-5" />
-          Chat Analysis
+          Analisis Baru
         </Button>
       </div>
 
@@ -43,7 +44,12 @@ export default function ChatSidebar() {
           {history.map((item) => (
             <button
               key={item.id}
-              className="w-full text-left p-3 rounded-lg bg-white/70 dark:bg-slate-800/70 border-none shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:bg-green-mint/20"
+              onClick={() => loadHistoryItem(item.id)}
+              className={`w-full text-left p-3 rounded-lg border-none shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                activeHistoryId === item.id
+                  ? "bg-primary/15 ring-2 ring-inset ring-primary/40 outline-none"
+                  : "bg-white/70 dark:bg-slate-800/70 hover:bg-primary/5"
+              }`}
             >
               <div className="mb-2">
                 <span className="text-sm text-foreground line-clamp-2">

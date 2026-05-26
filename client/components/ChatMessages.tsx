@@ -1,12 +1,12 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquareText, Brain, Zap, HeartCrack, Smile } from "lucide-react";
+import { MessageSquareText, Brain, Zap, HeartCrack, Smile, AlertCircle } from "lucide-react";
 import { useChat, type XaiLime } from "@/lib/chat-context";
 import { useEffect, useRef, useState } from "react";
 
 const classificationMap = {
-  depression: { label: "Depresi",    color: "#0369C2" },
-  anxiety:    { label: "Kecemasan",  color: "#8680C6" },
-  stress:     { label: "Stres",      color: "#F2393D" },
+  depression: { label: "Depresi",   color: "#0369C2" },
+  anxiety:    { label: "Cemas",     color: "#8680C6" },
+  stress:     { label: "Stres",     color: "#F2393D" },
 };
 
 const TEMPLATE_SUGGESTIONS = [
@@ -43,32 +43,24 @@ const TEMPLATE_SUGGESTIONS = [
 type Cls = "depression" | "anxiety" | "stress" | "none";
 
 function HighlightedText({ text, keyWords }: { text: string; keyWords: XaiLime["keyWords"] }) {
-  // Only highlight words with a real classification
   const wordMap = new Map<string, Cls>();
   for (const kw of keyWords) {
     if (kw.classification !== "none") wordMap.set(kw.word.toLowerCase(), kw.classification);
   }
 
-  // Split preserving whitespace runs
   const tokens = text.split(/(\s+)/);
 
   return (
     <span className="text-sm leading-relaxed">
       {tokens.map((token, i) => {
         if (/^\s+$/.test(token)) return <span key={i}>{token}</span>;
-
         const clean = token.toLowerCase().replace(/[^a-z0-9À-ɏ]/g, "");
-
-        // 1. exact match
         let cls: Cls | undefined = wordMap.get(clean);
-
-        // 2. stem/partial match (handles Sastrawi stemming e.g. "berdaya" → "daya")
         if (!cls && clean.length >= 3) {
           for (const [k, v] of wordMap.entries()) {
             if (clean.includes(k) || k.includes(clean)) { cls = v; break; }
           }
         }
-
         if (cls) {
           const color = classificationMap[cls].color;
           return (
@@ -87,7 +79,7 @@ function HighlightedText({ text, keyWords }: { text: string; keyWords: XaiLime["
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main component                                                      */
+/*  Loading step estimates                                              */
 /* ------------------------------------------------------------------ */
 
 const STEP_ESTIMATE: Record<string, string> = {
@@ -96,12 +88,15 @@ const STEP_ESTIMATE: Record<string, string> = {
   "Menerapkan LIME...":    "~5 dtk",
 };
 
+/* ------------------------------------------------------------------ */
+/*  Main component                                                      */
+/* ------------------------------------------------------------------ */
+
 export default function ChatMessages() {
   const { messages, isSending, loadingStatus, sendMessage } = useChat();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [elapsed, setElapsed] = useState(0);
 
-  // live elapsed-seconds counter while sending
   useEffect(() => {
     if (!isSending) { setElapsed(0); return; }
     setElapsed(0);
@@ -117,7 +112,7 @@ export default function ChatMessages() {
     <ScrollArea className="flex-1 p-6">
       <div className="space-y-6 w-full max-w-5xl mx-auto">
 
-        {/* Welcome template */}
+        {/* Welcome + template suggestions */}
         {messages.length === 0 && !isSending && (
           <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-8 py-8">
             <div className="space-y-4">
@@ -172,51 +167,76 @@ export default function ChatMessages() {
             className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
           >
             {message.type === "user" ? (
-              <div className="bg-gradient-to-r from-primary to-accent text-white rounded-xl px-4 py-3 max-w-xs lg:max-w-md shadow-lg transform transition-all duration-200 hover:-translate-y-0.5">
+              <div className="bg-primary text-white rounded-xl px-4 py-3 max-w-xs lg:max-w-md shadow-md transition-all duration-200 hover:-translate-y-0.5">
                 <p className="text-sm leading-relaxed">{message.content}</p>
               </div>
             ) : (
-              <div className="w-full">
-                <div className="bg-card border border-border rounded-xl p-4 max-w-3xl shadow-md hover:shadow-xl transition-shadow space-y-4">
-
-                  {/* Plain text reply */}
-                  <p className="text-sm leading-relaxed text-foreground">
+              <div className="w-full space-y-4">
+                <div className="bg-card border border-border rounded-xl p-4 max-w-3xl shadow-sm hover:shadow-md transition-shadow">
+                  <p className="text-sm leading-relaxed text-foreground mb-4">
                     {message.content}
                   </p>
 
-                  {/* Analysis panel — only when xaiLime present */}
+                  {/* XAI LIME panel */}
                   {message.xaiLime && (() => {
                     const activeLabels = (["depression", "anxiety", "stress"] as const)
                       .filter(l => message.xaiLime!.probabilities[l] >= 50);
                     if (activeLabels.length === 0) return null;
                     return (
-                      <div className="border-t border-border pt-4 space-y-4">
-
-                        {/* Only bars ≥ 50% */}
-                        <div className="space-y-2">
-                          {activeLabels.map((label) => {
-                            const pct   = message.xaiLime!.probabilities[label];
-                            const { color, label: lbl } = classificationMap[label];
-                            return (
-                              <div key={label} className="flex items-center gap-3">
-                                <span className="text-xs font-medium w-20 text-right text-muted-foreground shrink-0">
-                                  {lbl}
-                                </span>
-                                <div className="flex-1 bg-secondary h-2 rounded-full overflow-hidden">
-                                  <div
-                                    style={{ width: `${pct}%`, backgroundColor: color }}
-                                    className="h-full rounded-full transition-all duration-700"
-                                  />
-                                </div>
-                                <span className="text-xs font-semibold w-9 shrink-0" style={{ color }}>
-                                  {pct}%
-                                </span>
-                              </div>
-                            );
-                          })}
+                      <div className="border-t border-border pt-4">
+                        <div className="flex items-center gap-2 mb-4">
+                          <AlertCircle className="h-4 w-4 text-accent" />
+                          <h4 className="font-heading font-semibold text-sm text-foreground">
+                            Analisis XAI LIME
+                          </h4>
                         </div>
 
-                        {/* User input with inline word highlights */}
+                        {/* Stacked probability bar */}
+                        <div className="space-y-3 mb-4">
+                          <p className="text-xs text-muted-foreground font-medium">Confidence Score:</p>
+                          <div className="flex w-full h-4 rounded-full overflow-hidden bg-secondary">
+                            {(["depression", "anxiety", "stress"] as const).map(l => (
+                              <div
+                                key={l}
+                                style={{ width: `${message.xaiLime!.probabilities[l]}%`, backgroundColor: classificationMap[l].color }}
+                                className="h-full"
+                                title={`${classificationMap[l].label}: ${message.xaiLime!.probabilities[l]}%`}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex justify-between text-xs font-medium">
+                            {(["depression", "anxiety", "stress"] as const).map(l => (
+                              <div key={l} className="flex items-center gap-1">
+                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: classificationMap[l].color }} />
+                                {classificationMap[l].label} {message.xaiLime!.probabilities[l]}%
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Keyword badges */}
+                        {message.xaiLime.keyWords.length > 0 && (
+                          <div className="bg-muted/50 rounded-lg p-4 mb-3">
+                            <p className="text-xs text-muted-foreground mb-3 font-medium">Kata Kunci Penting:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {message.xaiLime.keyWords.map((kw, idx) => {
+                                const badgeColor = kw.classification !== "none" ? classificationMap[kw.classification].color : "hsl(var(--border))";
+                                const textColor  = kw.classification !== "none" ? "#ffffff" : "hsl(var(--foreground))";
+                                return (
+                                  <span
+                                    key={idx}
+                                    style={{ backgroundColor: badgeColor, color: textColor }}
+                                    className="px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm"
+                                  >
+                                    {kw.word}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Inline highlighted input text */}
                         {message.inputText && message.xaiLime.keyWords.length > 0 && (
                           <div className="bg-muted/40 rounded-lg px-4 py-3">
                             <HighlightedText
@@ -225,7 +245,6 @@ export default function ChatMessages() {
                             />
                           </div>
                         )}
-
                       </div>
                     );
                   })()}
@@ -235,11 +254,10 @@ export default function ChatMessages() {
           </div>
         ))}
 
-        {/* Loading indicator with step + elapsed time */}
+        {/* Loading indicator with step + elapsed */}
         {isSending && (
           <div className="flex justify-start">
             <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-md min-w-[220px] space-y-2">
-              {/* dots + step label */}
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -250,18 +268,14 @@ export default function ChatMessages() {
                   {loadingStatus ?? "Memproses..."}
                 </span>
               </div>
-              {/* elapsed + estimate */}
               <div className="flex items-center justify-between text-[11px] text-muted-foreground pl-1">
                 <span>{elapsed}s berlalu</span>
                 {loadingStatus && STEP_ESTIMATE[loadingStatus] && (
-                  <span className="text-muted-foreground/70">
-                    estimasi {STEP_ESTIMATE[loadingStatus]}
-                  </span>
+                  <span className="text-muted-foreground/70">estimasi {STEP_ESTIMATE[loadingStatus]}</span>
                 )}
               </div>
-              {/* thin progress shimmer bar */}
               <div className="h-0.5 w-full bg-secondary rounded-full overflow-hidden">
-                <div className="h-full bg-primary/50 rounded-full animate-[shimmer_2s_ease-in-out_infinite]"
+                <div className="h-full bg-primary/50 rounded-full"
                      style={{ width: "40%", animation: "shimmer 2s ease-in-out infinite" }} />
               </div>
             </div>

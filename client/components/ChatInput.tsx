@@ -87,6 +87,16 @@ export default function ChatInput() {
     }
   };
 
+  // Allow other components to trigger voice recording via custom event
+  useEffect(() => {
+    const handleStartVoice = () => {
+      setIsVoiceDialogOpen(true);
+      setTimeout(() => handleStartRecording(), 100);
+    };
+    window.addEventListener("mindcare-start-voice", handleStartVoice);
+    return () => window.removeEventListener("mindcare-start-voice", handleStartVoice);
+  }, []);
+
   /* ── Recording ──────────────────────────────────────────────────── */
 
   const handleStartRecording = async () => {
@@ -214,7 +224,7 @@ export default function ChatInput() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-accent hover:bg-secondary"
-              title="Rekam suara"
+              title="Rekam suara (Beta)"
               disabled={isSending || isUploading}
             >
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
@@ -233,7 +243,7 @@ export default function ChatInput() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Ctrl + Enter untuk kirim · Percakapan Anda bersifat rahasia
+          Ctrl + Enter untuk kirim • Pikiran Anda aman dan rahasia
         </p>
       </div>
 
@@ -243,7 +253,7 @@ export default function ChatInput() {
           <DialogHeader>
             <DialogTitle>Rekam Suara</DialogTitle>
             <DialogDescription>
-              Bicara dalam bahasa Indonesia. Rekaman akan ditranskripsi otomatis.
+              Klik tombol di bawah untuk mulai merekam suara Anda. Kami akan mentranskrip secara otomatis.
             </DialogDescription>
           </DialogHeader>
 

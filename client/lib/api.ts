@@ -19,7 +19,10 @@ function getToken(): string | null {
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    "ngrok-skip-browser-warning": "true",
+  };
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
