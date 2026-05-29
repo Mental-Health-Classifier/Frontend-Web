@@ -191,27 +191,26 @@ export default function ChatMessages() {
                           </h4>
                         </div>
 
-                        {/* Stacked probability bar */}
-                        <div className="space-y-3 mb-4">
+                        {/* Individual probability bars */}
+                        <div className="space-y-2 mb-4">
                           <p className="text-xs text-muted-foreground font-medium">Confidence Score:</p>
-                          <div className="flex w-full h-4 rounded-full overflow-hidden bg-secondary">
-                            {(["depression", "anxiety", "stress"] as const).map(l => (
-                              <div
-                                key={l}
-                                style={{ width: `${message.xaiLime!.probabilities[l]}%`, backgroundColor: classificationMap[l].color }}
-                                className="h-full"
-                                title={`${classificationMap[l].label}: ${message.xaiLime!.probabilities[l]}%`}
-                              />
-                            ))}
-                          </div>
-                          <div className="flex justify-between text-xs font-medium">
-                            {(["depression", "anxiety", "stress"] as const).map(l => (
-                              <div key={l} className="flex items-center gap-1">
-                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: classificationMap[l].color }} />
-                                {classificationMap[l].label} {message.xaiLime!.probabilities[l]}%
+                          {(["depression", "anxiety", "stress"] as const).map(l => (
+                            <div key={l} className="flex items-center gap-3">
+                              <div className="flex items-center gap-1.5 w-20 shrink-0">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: classificationMap[l].color }} />
+                                <span className="text-xs font-medium text-foreground">{classificationMap[l].label}</span>
                               </div>
-                            ))}
-                          </div>
+                              <div className="flex-1 h-3 rounded-full bg-secondary overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{ width: `${message.xaiLime!.probabilities[l]}%`, backgroundColor: classificationMap[l].color }}
+                                />
+                              </div>
+                              <span className="text-xs font-bold w-8 text-right tabular-nums" style={{ color: classificationMap[l].color }}>
+                                {message.xaiLime!.probabilities[l]}%
+                              </span>
+                            </div>
+                          ))}
                         </div>
 
                         {/* Keyword badges */}

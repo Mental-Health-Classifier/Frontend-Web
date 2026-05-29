@@ -30,7 +30,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  refreshUser: () => Promise<void>;
+  refreshUser: (silent?: boolean) => Promise<void>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -44,16 +44,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
 
-  /* Fetch user profile from backend */
-  const refreshUser = useCallback(async () => {
+  /* Fetch user profile from backend.
+   * silent=true: swallow errors without logging the user out — use after
+   * profile updates where a getMe failure is not an auth failure. */
+  const refreshUser = useCallback(async (silent = false) => {
     try {
       const res = await authApi.getMe();
       setUser(res.data);
     } catch {
-      // Token invalid / expired → clear everything
-      localStorage.removeItem("token");
-      setToken(null);
-      setUser(null);
+      if (!silent) {
+        // Hard auth failure (page load / token expired) → clear session
+        localStorage.removeItem("token");
+        setToken(null);
+        setUser(null);
+      }
+      // silent=true → stay logged in, displayed data may be stale until next refresh
     }
   }, []);
 
@@ -78,8 +83,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(meRes.data);
   }, []);
 
-  /* Logout: clear everything */
+  /* Logout: clear token + any legacy session keys */
   const logout = useCallback(() => {
+    // Purge any legacy localStorage session keys from older builds
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("mindcare_sessions"))
+      .forEach(k => localStorage.removeItem(k));
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);

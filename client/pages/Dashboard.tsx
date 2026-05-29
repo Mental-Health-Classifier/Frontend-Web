@@ -4,7 +4,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { TrendingUp, Activity, Brain, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { xaiApi } from "@/lib/api";
-import { getLocalSessions } from "@/lib/session-store";
 import { useNavigate } from "react-router-dom";
 
 interface Prediction {
@@ -63,7 +62,7 @@ export default function Dashboard() {
     {
       title: "Latest Status",
       value: lastPrediction?.category ?? "—",
-      description: lastPrediction ? `${Math.round(lastPrediction.confidence * 100)}% Confidence Score` : "No data yet",
+      description: lastPrediction ? `${lastPrediction.confidence > 1 ? Math.round(lastPrediction.confidence) : Math.round(lastPrediction.confidence * 100)}% Confidence Score` : "No data yet",
       icon: <Brain className="h-6 w-6" />,
       bgClass: "bg-primary",
     },
@@ -113,13 +112,14 @@ export default function Dashboard() {
     };
   });
 
-  // Recent Sessions from Local Storage to ensure XAI compatibility
-  const localSessions = getLocalSessions();
-  const recentSessions = localSessions.slice(0, 5).map((s) => ({
-    id: s.id,
-    date: s.timestamp,
-    status: s.category || "Tidak diketahui",
-    confidence: s.confidence || 0,
+  // Recent sessions from backend predictions
+  const recentSessions = predictions.slice(0, 5).map((p) => ({
+    id: p.id,
+    date: new Date(p.created_at).toLocaleString("id-ID", {
+      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+    }),
+    status: p.category || "Tidak diketahui",
+    confidence: p.confidence > 1 ? Math.round(p.confidence) : Math.round(p.confidence * 100),
   }));
 
   if (loading) {
