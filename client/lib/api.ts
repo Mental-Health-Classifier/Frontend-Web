@@ -26,6 +26,13 @@ function authHeaders(): Record<string, string> {
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    // Non-JSON response — likely ngrok error page or server down
+    if (!res.ok) throw new Error(`Server error (${res.status}). Coba beberapa saat lagi.`);
+    const text = await res.text();
+    throw new Error(`Respons tidak valid dari server. Coba beberapa saat lagi.`);
+  }
   const json = await res.json();
   if (!res.ok) {
     const message = json?.message ?? json?.detail ?? res.statusText;
@@ -114,4 +121,5 @@ export const analysisApi = {
 export const xaiApi = {
   predict: (text: string) => apiPost("/xai/predict", { text }),
   getHistory: () => apiGet("/xai/history"),
+  getHistoryDetail: (id: string) => apiGet(`/xai/history/${id}`),
 };

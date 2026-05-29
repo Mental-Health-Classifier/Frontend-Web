@@ -29,7 +29,7 @@ export function buildAudioFile(chunks: Blob[], mimeType: string): File {
 
 /* ── AI response builder (shared between text + audio paths) ────────── */
 
-export const LABEL_ID: Record<string, string> = {
+const LABEL_ID: Record<string, string> = {
   depression: "depresi",
   anxiety:    "kecemasan",
   stress:     "stres",

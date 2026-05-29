@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { authApi } from "@/lib/api";
@@ -13,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function Settings() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
@@ -32,9 +34,10 @@ export default function Settings() {
     setIsSaving(true);
     try {
       await authApi.updateMe({ name, email });
-      await refreshUser();
+      await refreshUser(true); // silent — profile update failure ≠ auth failure
       localStorage.setItem("autoVoice", autoVoice.toString());
       toast({ title: "Berhasil", description: "Profil berhasil diperbarui" });
+      navigate("/chat");
     } catch (err: any) {
       toast({ title: "Gagal", description: err.message || "Terjadi kesalahan", variant: "destructive" });
     } finally {
@@ -248,7 +251,7 @@ export default function Settings() {
 
           {/* Save Button */}
           <div className="flex gap-3 justify-end">
-            <Button variant="outline" className="border border-border">
+            <Button variant="outline" className="border border-border" onClick={() => navigate(-1)}>
               Batal
             </Button>
             <Button

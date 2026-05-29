@@ -4,7 +4,7 @@ import { Plus, Clock } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
 
 export default function ChatSidebar() {
-  const { history, isLoading, startNewChat, loadHistoryItem, activeHistoryId } = useChat();
+  const { history, isLoading, startNewChat, loadHistoryItem, activeHistoryId, viewingHistoryId } = useChat();
 
   return (
     <div className="w-64 bg-secondary border-r border-border flex flex-col h-full">
@@ -46,7 +46,7 @@ export default function ChatSidebar() {
               key={item.id}
               onClick={() => loadHistoryItem(item.id)}
               className={`w-full text-left p-3 rounded-lg border-none shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                activeHistoryId === item.id
+                (activeHistoryId === item.id || viewingHistoryId === item.id)
                   ? "bg-primary/15 ring-2 ring-inset ring-primary/40 outline-none"
                   : "bg-white/70 dark:bg-slate-800/70 hover:bg-primary/5"
               }`}
