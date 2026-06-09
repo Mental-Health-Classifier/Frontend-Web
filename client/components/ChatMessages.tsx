@@ -56,9 +56,9 @@ function HighlightedText({ text, keyWords }: { text: string; keyWords: XaiLime["
         if (/^\s+$/.test(token)) return <span key={i}>{token}</span>;
         const clean = token.toLowerCase().replace(/[^a-z0-9À-ɏ]/g, "");
         let cls: Cls | undefined = wordMap.get(clean);
-        if (!cls && clean.length >= 3) {
+        if (!cls && clean.length >= 4) {
           for (const [k, v] of wordMap.entries()) {
-            if (clean.includes(k) || k.includes(clean)) { cls = v; break; }
+            if (k.length >= 4 && (clean.includes(k) || k.includes(clean))) { cls = v; break; }
           }
         }
         if (cls) {

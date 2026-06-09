@@ -31,6 +31,7 @@ const classificationMap = {
 export default function Dashboard() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,8 +39,8 @@ export default function Dashboard() {
       try {
         const res = await xaiApi.getHistory();
         setPredictions(res.data ?? []);
-      } catch {
-        // silently fail
+      } catch (err) {
+        setError("Gagal memuat riwayat. Coba muat ulang halaman.");
       } finally {
         setLoading(false);
       }
@@ -127,6 +128,23 @@ export default function Dashboard() {
       <AppLayout>
         <div className="min-h-[calc(100vh-8rem)] bg-background flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="min-h-[calc(100vh-8rem)] bg-background flex flex-col items-center justify-center gap-4">
+          <AlertCircle className="h-10 w-10 text-destructive" />
+          <p className="text-muted-foreground text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-sm text-primary underline underline-offset-4"
+          >
+            Muat ulang
+          </button>
         </div>
       </AppLayout>
     );

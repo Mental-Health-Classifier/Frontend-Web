@@ -106,9 +106,9 @@ export const authApi = {
 
 // --- Analysis ---
 export const analysisApi = {
-  getSessions: () => apiGet("/analysis"),
+  getSessions: () => apiGet("/analysis/history"),
   getSession: (id: string) => apiGet(`/analysis/${id}`),
-  sendText: (input_text: string) => apiPost("/analysis/text", { input_text }),
+  sendText: (text: string) => apiPost("/analysis/text", { text }),
   sendAudio: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
