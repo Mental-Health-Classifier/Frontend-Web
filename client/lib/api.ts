@@ -117,6 +117,20 @@ export const analysisApi = {
   deleteSession: (id: string) => apiDelete(`/analysis/${id}`),
 };
 
+// --- Activity logs ---
+export interface ActivityLog {
+  id: string;
+  user_id: string | null;
+  action: string;
+  detail: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export const logsApi = {
+  getMyLogs: (limit = 50) => apiGet<{ data: ActivityLog[] }>(`/logs?limit=${limit}`),
+};
+
 // --- XAI ---
 export const xaiApi = {
   predict: (text: string) => apiPost("/xai/predict", { text }),

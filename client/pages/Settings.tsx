@@ -1,4 +1,5 @@
 import AppLayout from "@/components/AppLayout";
+import ActivityLogCard from "@/components/ActivityLogCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -248,6 +249,9 @@ export default function Settings() {
               </div>
             </div>
           </Card>
+
+          {/* Activity Log Section */}
+          <ActivityLogCard />
 
           {/* Save Button */}
           <div className="flex gap-3 justify-end">
