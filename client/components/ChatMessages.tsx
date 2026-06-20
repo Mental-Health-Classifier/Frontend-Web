@@ -95,7 +95,7 @@ function ResourcePanel({ resources }: { resources: ResourceEntry[] }) {
         <div className={`px-4 py-3 flex items-center gap-2 border-b ${hasCrisis ? "bg-red-50 border-red-200" : "bg-muted/40 border-border"}`}>
           <Lightbulb className={`h-4 w-4 shrink-0 ${hasCrisis ? "text-red-500" : "text-primary"}`} />
           <span className="text-sm font-semibold text-foreground">
-            {hasCrisis ? "Kamu Tidak Sendirian — Ini yang Bisa Dilakukan" : "Langkah yang Bisa Kamu Coba"}
+            {hasCrisis ? "Kamu Tidak Sendirian. Ini yang Bisa Dilakukan." : "Langkah yang Bisa Kamu Coba"}
           </span>
         </div>
 
