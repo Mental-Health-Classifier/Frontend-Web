@@ -7,6 +7,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { xaiApi, analysisApi } from "@/lib/api";
 import { buildAiContent } from "@/lib/audio-utils";
+import { getResources, type ResourceEntry } from "@/lib/resources";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -29,6 +30,7 @@ export interface ChatMessage {
   type: "user" | "ai";
   content: string;
   xaiLime?: XaiLime;
+  resources?: ResourceEntry[];
   inputText?: string;   // original user text — used for inline highlighting
   timestamp?: string;
 }
@@ -118,6 +120,31 @@ function parseXaiResults(xaiResults: any[]): XaiLime | undefined {
   return { probabilities, keyWords };
 }
 
+// Returns one ResourceEntry per label that scored >= 50%, sorted by severity descending.
+// Falls back to single top-label entry when xaiLime isn't available yet (optimistic render).
+function computeResources(
+  xaiLime: XaiLime | undefined,
+  fallbackCategory?: string,
+  fallbackConfidence?: number,
+): ResourceEntry[] {
+  if (xaiLime?.probabilities) {
+    const entries: ResourceEntry[] = [];
+    for (const cat of ["stress", "depression", "anxiety"] as const) {
+      const pct = xaiLime.probabilities[cat] ?? 0;
+      if (pct >= 50) {
+        const entry = getResources(cat, pct / 100);
+        if (entry) entries.push(entry);
+      }
+    }
+    return entries.sort((a, b) => b.tier - a.tier);
+  }
+  if (fallbackCategory && fallbackConfidence !== undefined) {
+    const entry = getResources(fallbackCategory, fallbackConfidence);
+    return entry ? [entry] : [];
+  }
+  return [];
+}
+
 /* ------------------------------------------------------------------ */
 /*  Context                                                            */
 /* ------------------------------------------------------------------ */
@@ -172,9 +199,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         { category: cached.category, confidence: cached.confidence },
         undefined
       );
+      const optimisticResources = computeResources(undefined, cached.category, cached.confidence);
       setMessages([
         { id: `hist-user-${id}`, type: "user", content: cached.input_text ?? "—", timestamp: new Date(cached.created_at).toISOString() },
-        { id: `hist-ai-${id}`,   type: "ai",   content, timestamp: new Date(cached.created_at).toISOString() },
+        { id: `hist-ai-${id}`,   type: "ai",   content, resources: optimisticResources.length > 0 ? optimisticResources : undefined, timestamp: new Date(cached.created_at).toISOString() },
       ]);
     }
 
@@ -190,6 +218,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       const { content: aiContent } = buildAiContent(prediction, topWords);
 
+      const resources = computeResources(xaiLime, prediction?.category, prediction?.confidence);
       setMessages([
         {
           id: `hist-user-${id}`, type: "user",
@@ -200,6 +229,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           id: `hist-ai-${id}`, type: "ai",
           content: aiContent, xaiLime,
           inputText: prediction?.input_text ?? cached?.input_text,
+          resources: resources.length > 0 ? resources : undefined,
           timestamp: new Date(prediction?.created_at ?? cached?.created_at).toISOString(),
         },
       ]);
@@ -244,9 +274,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         .map(kw => kw.word).join(", ");
 
       const { content: aiContent } = buildAiContent(prediction, topWords);
+      const resources = computeResources(xaiLime, prediction?.category, prediction?.confidence);
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`, type: "ai",
         content: aiContent, xaiLime, inputText: text,
+        resources: resources.length > 0 ? resources : undefined,
         timestamp: new Date().toISOString(),
       };
 
@@ -318,9 +350,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         .map(kw => kw.word).join(", ");
 
       const { content: audioContent } = buildAiContent(prediction, topWords);
+      const resources = computeResources(xaiLime, prediction?.category, prediction?.confidence);
       const aiMsg: ChatMessage = {
         id: `ai-audio-${Date.now()}`, type: "ai",
         content: audioContent, xaiLime, inputText,
+        resources: resources.length > 0 ? resources : undefined,
         timestamp: new Date().toISOString(),
       };
 

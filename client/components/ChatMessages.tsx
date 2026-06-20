@@ -1,6 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquareText, Brain, Zap, HeartCrack, Smile, AlertCircle } from "lucide-react";
+import { MessageSquareText, Brain, Zap, HeartCrack, Smile, AlertCircle, Lightbulb, Phone } from "lucide-react";
 import { useChat, type XaiLime } from "@/lib/chat-context";
+import { type ResourceEntry } from "@/lib/resources";
 import { useEffect, useRef, useState } from "react";
 
 const classificationMap = {
@@ -75,6 +76,81 @@ function HighlightedText({ text, keyWords }: { text: string; keyWords: XaiLime["
         return <span key={i}>{token}</span>;
       })}
     </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Resource panel                                                      */
+/* ------------------------------------------------------------------ */
+
+function ResourcePanel({ resources }: { resources: ResourceEntry[] }) {
+  if (resources.length === 0) return null;
+
+  const hasCrisis = resources.some(r => r.tier === 3);
+
+  return (
+    <div className="max-w-3xl">
+      <div className={`rounded-xl border shadow-sm overflow-hidden ${hasCrisis ? "border-red-200" : "border-border"}`}>
+        {/* Header */}
+        <div className={`px-4 py-3 flex items-center gap-2 border-b ${hasCrisis ? "bg-red-50 border-red-200" : "bg-muted/40 border-border"}`}>
+          <Lightbulb className={`h-4 w-4 shrink-0 ${hasCrisis ? "text-red-500" : "text-primary"}`} />
+          <span className="text-sm font-semibold text-foreground">
+            {hasCrisis ? "Kamu Tidak Sendirian — Ini yang Bisa Dilakukan" : "Langkah yang Bisa Kamu Coba"}
+          </span>
+        </div>
+
+        {/* Resource cards */}
+        <div className="divide-y divide-border">
+          {resources.map((res, i) => {
+            const meta = classificationMap[res.category];
+            const isCrisis = res.tier === 3;
+
+            return (
+              <div key={i} className="p-4" style={{ borderLeft: `3px solid ${meta.color}` }}>
+                {/* Category + tier label */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: `${meta.color}18`, color: meta.color }}
+                  >
+                    {meta.label}
+                  </span>
+                  {isCrisis && (
+                    <span className="text-[11px] font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                      Perlu perhatian segera
+                    </span>
+                  )}
+                </div>
+
+                {/* Tip */}
+                <p className="text-sm text-foreground leading-relaxed">
+                  {res.tip}
+                </p>
+
+                {/* Crisis contacts */}
+                {res.contacts && (
+                  <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Phone className="h-3.5 w-3.5 text-red-600" />
+                      <span className="text-xs font-bold text-red-700">Hubungi bantuan sekarang:</span>
+                    </div>
+                    <div className="space-y-2">
+                      {res.contacts.map((c, j) => (
+                        <div key={j} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
+                          <span className="font-semibold text-foreground">{c.label}</span>
+                          <span className="font-bold text-red-600">{c.contact}</span>
+                          <span className="text-muted-foreground">{c.note}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -171,7 +247,7 @@ export default function ChatMessages() {
                 <p className="text-sm leading-relaxed">{message.content}</p>
               </div>
             ) : (
-              <div className="w-full space-y-4">
+              <div className="w-full space-y-3">
                 <div className="bg-card border border-border rounded-xl p-4 max-w-3xl shadow-sm hover:shadow-md transition-shadow">
                   <p className="text-sm leading-relaxed text-foreground mb-4">
                     {message.content}
@@ -248,6 +324,11 @@ export default function ChatMessages() {
                     );
                   })()}
                 </div>
+
+                {/* Resource panel — separate card below LIME */}
+                {message.resources && message.resources.length > 0 && (
+                  <ResourcePanel resources={message.resources} />
+                )}
               </div>
             )}
           </div>

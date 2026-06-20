@@ -1,15 +1,22 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings, BarChart3 } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+const NAV_LINKS = [
+  { to: "/chat",      label: "Obrolan"      },
+  { to: "/dashboard", label: "Dasbor"       },
+  { to: "/resources", label: "Sumber Daya"  },
+];
+
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -22,25 +29,27 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <header className="app-layout-navbar bg-primary text-primary-foreground border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link
-              to="/"
-              className="font-heading font-bold text-xl text-white hover:opacity-90 transition-opacity"
-            >
-              MindCare
+            <Link to="/" className="hover:opacity-90 transition-opacity">
+              <img src="/logo.png" alt="MindCare" className="h-8 brightness-0 invert" />
             </Link>
             <nav className="hidden md:flex gap-6">
-              <Link
-                to="/chat"
-                className="font-medium text-sm text-white/90 hover:text-white transition-colors"
-              >
-                Obrolan
-              </Link>
-              <Link
-                to="/dashboard"
-                className="font-medium text-sm text-white/90 hover:text-white transition-colors"
-              >
-                Dasbor
-              </Link>
+              {NAV_LINKS.map(({ to, label }) => {
+                const active = location.pathname === to;
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    className={`font-medium text-sm transition-colors relative pb-0.5 ${
+                      active ? "text-white" : "text-white/70 hover:text-white"
+                    }`}
+                  >
+                    {label}
+                    {active && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full" />
+                    )}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
 
