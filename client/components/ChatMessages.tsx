@@ -1,7 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquareText, Brain, Zap, HeartCrack, Smile, AlertCircle, Lightbulb, Phone } from "lucide-react";
+import { MessageSquareText, Brain, Zap, HeartCrack, Smile, AlertCircle, Lightbulb, Phone, Copy, Check } from "lucide-react";
 import { useChat, type XaiLime } from "@/lib/chat-context";
-import { type ResourceEntry } from "@/lib/resources";
+import { type ResourceEntry, type CrisisContact } from "@/lib/resources";
 import { useEffect, useRef, useState } from "react";
 
 const classificationMap = {
@@ -80,6 +80,31 @@ function HighlightedText({ text, keyWords }: { text: string; keyWords: XaiLime["
 }
 
 /* ------------------------------------------------------------------ */
+/*  Copyable contact number                                             */
+/* ------------------------------------------------------------------ */
+
+function CopyableContact({ contact }: { contact: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(contact);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      title="Klik untuk menyalin"
+      className="inline-flex items-center gap-1 font-bold font-mono text-foreground hover:text-primary transition-colors cursor-pointer"
+    >
+      {copied
+        ? <><Check className="h-3 w-3" /> Tersalin</>
+        : <><Copy className="h-3 w-3 opacity-40" /> {contact}</>
+      }
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Resource panel                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -90,10 +115,10 @@ function ResourcePanel({ resources }: { resources: ResourceEntry[] }) {
 
   return (
     <div className="max-w-3xl">
-      <div className={`rounded-xl border shadow-sm overflow-hidden ${hasCrisis ? "border-red-200" : "border-border"}`}>
+      <div className="rounded-xl border border-border shadow-sm overflow-hidden">
         {/* Header */}
-        <div className={`px-4 py-3 flex items-center gap-2 border-b ${hasCrisis ? "bg-red-50 border-red-200" : "bg-muted/40 border-border"}`}>
-          <Lightbulb className={`h-4 w-4 shrink-0 ${hasCrisis ? "text-red-500" : "text-primary"}`} />
+        <div className="px-4 py-3 flex items-center gap-2 border-b border-border bg-muted/40">
+          <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
           <span className="text-sm font-semibold text-foreground">
             {hasCrisis ? "Kamu Tidak Sendirian. Ini yang Bisa Dilakukan." : "Langkah yang Bisa Kamu Coba"}
           </span>
@@ -116,7 +141,7 @@ function ResourcePanel({ resources }: { resources: ResourceEntry[] }) {
                     {meta.label}
                   </span>
                   {isCrisis && (
-                    <span className="text-[11px] font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                       Perlu perhatian segera
                     </span>
                   )}
@@ -129,16 +154,16 @@ function ResourcePanel({ resources }: { resources: ResourceEntry[] }) {
 
                 {/* Crisis contacts */}
                 {res.contacts && (
-                  <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3">
+                  <div className="mt-4 rounded-lg bg-muted/50 border border-border p-3">
                     <div className="flex items-center gap-1.5 mb-2">
-                      <Phone className="h-3.5 w-3.5 text-red-600" />
-                      <span className="text-xs font-bold text-red-700">Hubungi bantuan sekarang:</span>
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-semibold text-foreground">Hubungi bantuan sekarang:</span>
                     </div>
                     <div className="space-y-2">
                       {res.contacts.map((c, j) => (
                         <div key={j} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
                           <span className="font-semibold text-foreground">{c.label}</span>
-                          <span className="font-bold text-red-600">{c.contact}</span>
+                          <CopyableContact contact={c.contact} />
                           <span className="text-muted-foreground">{c.note}</span>
                         </div>
                       ))}

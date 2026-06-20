@@ -1,6 +1,28 @@
 import AppLayout from "@/components/AppLayout";
 import { getAllTiersForCategory, CRISIS_CONTACTS, type Category } from "@/lib/resources";
-import { Phone } from "lucide-react";
+import { Phone, Copy, Check } from "lucide-react";
+import { useState } from "react";
+
+function CopyableContact({ contact }: { contact: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(contact);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      title="Klik untuk menyalin"
+      className="inline-flex items-center gap-1.5 font-bold font-mono text-foreground hover:text-primary transition-colors cursor-pointer text-base"
+    >
+      {copied
+        ? <><Check className="h-4 w-4" /> Tersalin</>
+        : <><Copy className="h-3.5 w-3.5 opacity-30" /> {contact}</>
+      }
+    </button>
+  );
+}
 
 const CONDITIONS: { id: Category; label: string; color: string }[] = [
   { id: "stress",     label: "Stres",     color: "#F2393D" },
@@ -87,7 +109,7 @@ export default function Resources() {
         {/* Crisis contacts */}
         <section className="mt-16 pt-12 border-t border-border">
           <div className="flex items-center gap-2.5 mb-2">
-            <Phone className="h-4 w-4 text-destructive" />
+            <Phone className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-lg font-semibold text-foreground">Kontak Darurat</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-7">
@@ -98,9 +120,9 @@ export default function Resources() {
             {CRISIS_CONTACTS.map((c, i) => (
               <div key={i} className="rounded-xl border border-border bg-card p-4">
                 <p className="text-xs text-muted-foreground mb-1">{c.label}</p>
-                <p className="text-base font-bold text-destructive mb-1 font-mono tracking-tight">
-                  {c.contact}
-                </p>
+                <div className="mb-1">
+                  <CopyableContact contact={c.contact} />
+                </div>
                 <p className="text-xs text-muted-foreground">{c.note}</p>
               </div>
             ))}
