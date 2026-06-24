@@ -1,7 +1,7 @@
 import AppLayout from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Activity, Brain, Loader2 } from "lucide-react";
+import { TrendingUp, Activity, Brain, Loader2, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { xaiApi } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
@@ -38,7 +38,11 @@ export default function Dashboard() {
     (async () => {
       try {
         const res = await xaiApi.getHistory();
-        setPredictions(res.data ?? []);
+        const items: Prediction[] = res.data ?? [];
+        items.sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setPredictions(items);
       } catch (err) {
         setError("Gagal memuat riwayat. Coba muat ulang halaman.");
       } finally {

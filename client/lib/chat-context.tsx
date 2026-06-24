@@ -139,7 +139,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const res = await xaiApi.getHistory();
-      const predictions = res.data ?? [];
+      const predictions: any[] = res.data ?? [];
+      predictions.sort((a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
       rawPredictionsRef.current = predictions;
 
       const items: HistoryItem[] = predictions.map((p: any) => ({
